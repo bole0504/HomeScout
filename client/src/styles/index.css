@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ========================
+   CSS Reset & Globals
+   ======================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Primary palette */
+  --color-primary: #1677ff;
+  --color-primary-hover: #4096ff;
+  --color-primary-active: #0958d9;
+
+  /* Semantic */
+  --color-success: #52c41a;
+  --color-warning: #faad14;
+  --color-error: #ff4d4f;
+  --color-good-price: #52c41a;
+
+  /* Neutral */
+  --color-bg-base: #f0f2f5;
+  --color-bg-container: #ffffff;
+  --color-text-primary: rgba(0, 0, 0, 0.88);
+  --color-text-secondary: rgba(0, 0, 0, 0.65);
+  --color-text-tertiary: rgba(0, 0, 0, 0.45);
+  --color-border: #d9d9d9;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03),
+               0 1px 6px -1px rgba(0, 0, 0, 0.02),
+               0 2px 4px 0 rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
+               0 3px 6px -4px rgba(0, 0, 0, 0.12),
+               0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
+               0 3px 6px -4px rgba(0, 0, 0, 0.12),
+               0 9px 28px 8px rgba(0, 0, 0, 0.05);
+
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--color-text-primary);
+  background: var(--color-bg-base);
+  line-height: 1.5715;
+}
+
+/* ========================
+   Scrollbar Customization
+   ======================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* ========================
+   Utility Classes
+   ======================== */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+.card-hover {
+  transition: transform var(--transition-normal),
+              box-shadow var(--transition-normal);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Good Price Badge */
+.good-price-badge {
+  background: linear-gradient(135deg, #52c41a, #73d13d);
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+/* ========================
+   Login Page Styles
+   ======================== */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.login-background {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+}
+
+.login-card {
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 20px 48px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.login-form-button {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* ========================
+   Admin Layout Styles
+   ======================== */
+.admin-logo {
+  height: 32px;
+  margin: 16px;
+  background: rgba(22, 119, 255, 0.1);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  font-weight: bold;
+  font-size: 16px;
+  transition: all 0.2s;
+  overflow: hidden;
+  white-space: nowrap;
+}
