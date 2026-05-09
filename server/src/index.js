@@ -34,7 +34,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/properties', require('./routes/properties'));
 // app.use('/api/crawl', require('./routes/crawl'));
-// app.use('/api/bookmarks', require('./routes/bookmarks'));
+app.use('/api/bookmarks', require('./routes/bookmarks'));
 app.use('/api/users', require('./routes/users'));
 
 // --------------- Error Handler ---------------

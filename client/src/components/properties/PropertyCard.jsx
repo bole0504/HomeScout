@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Tag, Typography, Space, Row, Col } from 'antd';
 import { EnvironmentOutlined, HomeOutlined, CompressOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import BookmarkButton from './BookmarkButton';
 
 const { Title, Text } = Typography;
 
@@ -31,9 +32,16 @@ const PropertyCard = ({ property }) => {
         <Title level={4} style={{ color: '#cf1322', margin: 0 }}>
           {totalPrice ? `${totalPrice / 1000} Tỷ` : 'Thỏa thuận'}
         </Title>
-        {goodPrice && (
-          <Tag color="success">Giá Hời {-goodPricePercent}%</Tag>
-        )}
+        <Space size={8} align="start">
+          {goodPrice && (
+            <Tag color="success">Giá Hời {-goodPricePercent}%</Tag>
+          )}
+          <BookmarkButton 
+            propertyId={property._id} 
+            initialIsBookmarked={property.isBookmarked} 
+            initialCount={property.bookmarkCount} 
+          />
+        </Space>
       </div>
 
       <Text type="secondary" ellipsis style={{ marginBottom: 12, display: 'block' }}>

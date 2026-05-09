@@ -150,6 +150,11 @@ const propertySchema = new mongoose.Schema(
       default: 0,
     },
 
+    bookmarkCount: {
+      type: Number,
+      default: 0,
+    },
+
     // Calculated
     goodPrice: {
       type: Boolean,

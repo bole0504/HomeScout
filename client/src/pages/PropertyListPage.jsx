@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Pagination, Spin, Empty, Tabs, Typography } from 'antd';
-import { propertiesAPI } from '../../api';
-import PropertyCard from '../../components/properties/PropertyCard';
-import PropertyFilters from '../../components/properties/PropertyFilters';
+import { propertiesAPI, bookmarksAPI } from '../api';
+import PropertyCard from '../components/properties/PropertyCard';
+import PropertyFilters from '../components/properties/PropertyFilters';
 
 const { Title } = Typography;
 
@@ -26,13 +26,17 @@ const PropertyListPage = () => {
         params.goodPrice = true;
       }
 
-      const res = await propertiesAPI.getAll(params);
-      if (res.success) {
-        setProperties(res.data);
+      const res = tab === 'bookmarked'
+        ? await bookmarksAPI.getAll(params)
+        : await propertiesAPI.getAll(params);
+      
+      const { data } = res;
+      if (data.success) {
+        setProperties(data.data);
         setPagination({
-          page: res.pagination.page,
-          limit: res.pagination.limit,
-          total: res.pagination.total,
+          page: data.pagination.page,
+          limit: data.pagination.limit,
+          total: data.pagination.total,
         });
       }
     } catch (error) {
@@ -57,19 +61,19 @@ const PropertyListPage = () => {
   const items = [
     { key: 'all', label: 'Tất cả BĐS' },
     { key: 'good-price', label: 'Giá Hời' },
-    { key: 'bookmarked', label: 'Đang theo dõi' }, // Phase 3 placeholder
+    { key: 'bookmarked', label: 'Đang theo dõi' },
   ];
 
   return (
     <div style={{ padding: '0 24px 24px' }}>
       <Title level={2} style={{ margin: '24px 0' }}>Kho Bất Động Sản</Title>
-      
+
       <PropertyFilters onFilter={handleFilter} />
 
-      <Tabs 
-        activeKey={activeTab} 
-        onChange={setActiveTab} 
-        items={items} 
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={items}
         style={{ marginBottom: 16 }}
       />
 
@@ -83,7 +87,7 @@ const PropertyListPage = () => {
                 </Col>
               ))}
             </Row>
-            
+
             <div style={{ marginTop: 32, textAlign: 'center' }}>
               <Pagination
                 current={pagination.page}

@@ -1,5 +1,6 @@
 const express = require('express');
 const Property = require('../models/Property');
+const Bookmark = require('../models/Bookmark');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -17,7 +18,7 @@ router.get('/', async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const query = { status: 'ACTIVE' }; 
+    const query = { status: 'active' }; 
 
     if (req.query.province) query['address.province'] = req.query.province;
     if (req.query.district) query['address.district'] = req.query.district;
@@ -58,9 +59,22 @@ router.get('/', async (req, res, next) => {
 
     const total = await Property.countDocuments(query);
 
+    const propertyIds = properties.map(p => p._id);
+    const bookmarks = await Bookmark.find({
+      userId: req.user.id,
+      propertyId: { $in: propertyIds }
+    });
+    
+    const bookmarkedPropertyIds = new Set(bookmarks.map(b => b.propertyId.toString()));
+    
+    const dataWithBookmarks = properties.map(p => ({
+      ...p.toObject(),
+      isBookmarked: bookmarkedPropertyIds.has(p._id.toString())
+    }));
+
     res.json({
       success: true,
-      data: properties,
+      data: dataWithBookmarks,
       pagination: {
         page,
         limit,
@@ -81,7 +95,7 @@ router.get('/', async (req, res, next) => {
 router.get('/stats', async (req, res, next) => {
   try {
     const stats = await Property.aggregate([
-      { $match: { status: 'ACTIVE' } },
+      { $match: { status: 'active' } },
       { $group: { _id: '$address.province', count: { $sum: 1 }, avgPrice: { $avg: '$pricePerM2' } } },
       { $sort: { count: -1 } }
     ]);
@@ -102,7 +116,16 @@ router.get('/:id', async (req, res, next) => {
     if (!property) {
       return res.status(404).json({ success: false, error: 'Property not found' });
     }
-    res.json({ success: true, data: property });
+
+    const bookmark = await Bookmark.findOne({ userId: req.user.id, propertyId: property._id });
+
+    res.json({ 
+      success: true, 
+      data: {
+        ...property.toObject(),
+        isBookmarked: !!bookmark
+      } 
+    });
   } catch (err) {
     next(err);
   }

@@ -15,13 +15,13 @@ Mỗi Sprint/Phase sẽ:
 **Sessions**: 1  
 
 ### Deliverables
-- [ ] Init Git repo + `.gitignore`
-- [ ] Server: `package.json`, Express boilerplate, env config
-- [ ] Client: Vite + React + Ant Design boilerplate
-- [ ] MongoDB Atlas connection
-- [ ] Project structure theo tech-stack spec
-- [ ] Base middleware (CORS, error handler, morgan)
-- [ ] README.md
+- [x] Init Git repo + `.gitignore`
+- [x] Server: `package.json`, Express boilerplate, env config
+- [x] Client: Vite + React + Ant Design boilerplate
+- [x] MongoDB Atlas connection
+- [x] Project structure theo tech-stack spec
+- [x] Base middleware (CORS, error handler, morgan)
+- [x] README.md
 
 ### Acceptance Criteria
 - `npm run dev` chạy được cả server + client
@@ -85,12 +85,13 @@ Mỗi Sprint/Phase sẽ:
 **Sessions**: 1  
 
 ### Deliverables
-- [ ] Bookmark model
-- [ ] Bookmark routes: add, remove, list (per user)
-- [ ] BookmarkButton component (toggle heart icon)
-- [ ] Tab "Đang Theo Dõi" trong PropertyListPage
-- [ ] Bookmark count hiển thị trên card
-- [ ] Custom hook `useBookmark`
+- [x] Bookmark model
+- [x] Bookmark routes: add, remove, list (per user)
+- [x] BookmarkButton component (toggle heart icon)
+- [x] Tab "Đang Theo Dõi" trong PropertyListPage
+- [x] Bookmark count hiển thị trên card
+- [x] Custom hook `useBookmark`
+- [ ] Property Details Page
 
 ### Acceptance Criteria
 - User bookmark BĐS → icon heart đổi trạng thái
