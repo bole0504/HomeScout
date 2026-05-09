@@ -105,23 +105,25 @@ Mỗi Sprint/Phase sẽ:
 **Goal**: Core crawling system — DOM analysis + data extraction  
 **Sessions**: 2-3 (phase phức tạp nhất)  
 
-### Phase 4a: DOM Learner Service
-- [ ] Puppeteer setup (stealth mode)
-- [ ] DOM analysis algorithm:
-  - Tìm repeating patterns (listing containers)
-  - Detect price/area/phone patterns via regex
-  - Score + rank container candidates
-  - Extract sample data
-- [ ] API endpoint: POST `/api/crawl/learn` → trả về suggested selectors + preview
-- [ ] Client: CrawlConfigPage — URL input + DOM analysis results display
+### Phase 4a: DOM Learner & Admin Config UI
+- [x] Puppeteer setup (stealth mode)
+- [x] DOM extraction algorithm dựa trên config linh hoạt
+- [x] API endpoints: CRUD configs + POST `/api/crawl/test` preview
+- [x] Client: CrawlConfigPage + CrawlConfigForm (Integrated test preview)
 
-### Phase 4b: Crawl Engine
-- [ ] CrawlConfig model
-- [ ] Crawl engine: navigate → extract → parse
-- [ ] Pagination handling (URL param, next button, infinite scroll)
+### Phase 4b: Crawl Engine & Data Processing
+- [x] CrawlConfig model & schema
+- [x] Crawl engine: navigate → extract → parse (Multi-field extraction)
+- [x] Logic bóc tách NLP từ description (width, length, floors, legal)
 - [ ] Data normalization (address, price, area)
-- [ ] API endpoints: POST `/api/crawl/test`, POST `/api/crawl/configs`
-- [ ] Client: Test crawl preview + save config flow
+- [ ] API endpoints: POST `/api/crawl/configs`
+- [ ] Client: Save config flow hoàn thiện
+
+### Phase 4d: AI Selector Helper
+- [ ] Integrated Gemini API on Backend
+- [ ] Endpoint: POST `/api/crawl/ai-suggest` (Analyze DOM and suggest selectors)
+- [ ] Client: "AI Helper" button in CrawlConfigForm
+- [ ] Auto-fill form fields results from AI
 
 ### Phase 4c: Data Validation & Deduplication
 **Ref**: [property-valuation-data.md](./property-valuation-data.md) — Crawl Patterns & NLP sections
@@ -131,16 +133,11 @@ Mỗi Sprint/Phase sẽ:
   - Address normalization (Vietnam provinces/districts mapping)
   - Price format parsing ("2 tỷ", "35 triệu/m²", etc.)
   - Phone number cleanup
-  - **Land info extraction**: mặt tiền, chiều sâu, hình thể, hướng (regex from spec)
-  - **Building info extraction**: số tầng, kết cấu, tình trạng, năm xây (regex from spec)
-  - **Legal info extraction**: sổ đỏ/hồng, chính chủ, quy hoạch (regex from spec)
-  - **Location info extraction**: đường rộng, hẻm, xe hơi vào (regex from spec)
-  - **NLP from description**: parse unstructured text cho các fields không có structured selector
 - [ ] Deduplicator service:
   - Content hash generation
   - Upsert logic (update if newer, skip if same)
 - [ ] DataCompletenessScore calculator
-- [ ] Integration test với batdongsan.com.vn
+- [ ] Integration test với batdongsan.com.vn (Success with hardcoded selectors)
 
 ### Acceptance Criteria
 - Admin nhập URL batdongsan.com.vn → DOM learner trả về selectors hợp lý

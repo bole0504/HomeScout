@@ -7,6 +7,7 @@ import AdminLayout from './layouts/AdminLayout';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import PropertyListPage from './pages/PropertyListPage';
 import PropertyDetailsPage from './pages/PropertyDetailsPage';
+import CrawlConfigPage from './pages/admin/CrawlConfigPage';
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { isAuthenticated, isAdmin, loading } = useAuth();
@@ -51,6 +52,7 @@ function App() {
         {/* Admin only sub-routes */}
         <Route element={<ProtectedRoute requireAdmin={true} />}>
           <Route path="admin/users" element={<UserManagementPage />} />
+          <Route path="admin/crawl" element={<CrawlConfigPage />} />
         </Route>
       </Route>
 

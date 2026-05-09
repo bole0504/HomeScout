@@ -42,12 +42,11 @@ const AdminLayout = () => {
         label: 'Quản lý Người dùng',
       }
     ] : []),
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Cấu hình Crawl',
-      disabled: true,
-    },
+      {
+        key: '/admin/crawl',
+        icon: <SettingOutlined />,
+        label: 'Cấu hình Crawl',
+      },
   ];
 
   const userMenuItems = [
@@ -89,9 +88,7 @@ const AdminLayout = () => {
           mode="inline"
           selectedKeys={[location.pathname]}
           items={menuItems}
-          onClick={({ key }) => {
-            if (key !== 'settings') navigate(key);
-          }}
+          onClick={({ key }) => navigate(key)}
         />
       </Sider>
       

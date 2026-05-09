@@ -26,10 +26,14 @@ const crawlConfigSchema = new mongoose.Schema(
       fields: {
         address: { type: String, default: '' },
         price: { type: String, default: '' },
+        pricePerM2: { type: String, default: '' },
         area: { type: String, default: '' },
+        bedrooms: { type: String, default: '' },
+        wc: { type: String, default: '' },
         phone: { type: String, default: '' },
+        revealPhoneSelector: { type: String, default: '' }, // New: selector to click to show phone
         description: { type: String, default: '' },
-        images: { type: String, default: '' },
+        images: { type: String, default: '' }, // New: selector for images (can be multiple)
         detailLink: { type: String, default: '' },
       },
     },

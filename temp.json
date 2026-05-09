@@ -1,0 +1,19 @@
+{
+    "name": "https://batdongsan.com.vn/",
+    "isActive": true,
+    "url": "https://batdongsan.com.vn/ban-nha-rieng?cIds=163,40",
+    "selectors": {
+        "listContainer": ".re__srp-list",
+        "itemSelector": ".js__card-full-web",
+        "fields": {
+            "address": ".re__card-location",
+            "price": ".re__card-config-price",
+            "area": ".re__card-config-area",
+            "description": ".re__card-description"
+        }
+    },
+    "pagination": {
+        "type": "url_param",
+        "paramName": "page"
+    }
+}
