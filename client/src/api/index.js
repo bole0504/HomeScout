@@ -61,6 +61,7 @@ export const bookmarksAPI = {
   getAll: (params) => api.get('/bookmarks', { params }),
   add: (propertyId) => api.post('/bookmarks', { propertyId }),
   remove: (propertyId) => api.delete(`/bookmarks/${propertyId}`),
+  updateNote: (propertyId, note) => api.put(`/bookmarks/${propertyId}/note`, { note }),
 };
 
 // Crawl (Admin)

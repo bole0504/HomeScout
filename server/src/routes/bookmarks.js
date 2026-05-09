@@ -1,5 +1,5 @@
 const express = require('express');
-const Bookmark = require('../models/Bookmark');
+const UserProperty = require('../models/UserProperty');
 const Property = require('../models/Property');
 const { auth } = require('../middleware/auth');
 
@@ -19,20 +19,19 @@ router.get('/', async (req, res, next) => {
     const limit = parseInt(req.query.limit, 10) || 12;
     const skip = (page - 1) * limit;
 
-    const totalBookmarks = await Bookmark.countDocuments({ userId: req.user.id });
+    const totalUserProperties = await UserProperty.countDocuments({ userId: req.user.id });
 
-    // Find bookmarks and populate the property details
-    const bookmarks = await Bookmark.find({ userId: req.user.id })
+    // Find saved properties and populate the property details
+    const savedProperties = await UserProperty.find({ userId: req.user.id })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('propertyId'); // populates the full property document
+      .populate('propertyId'); 
 
-    // Map bookmarks to an array of property objects
-    // attaching the isBookmarked flag so the UI knows
-    const properties = bookmarks
+    // Map to an array of property objects
+    const properties = savedProperties
       .map(b => b.propertyId)
-      .filter(p => p !== null) // Filter out any deleted properties
+      .filter(p => p !== null) 
       .map(p => ({
         ...p.toObject(),
         isBookmarked: true
@@ -44,8 +43,8 @@ router.get('/', async (req, res, next) => {
       pagination: {
         page,
         limit,
-        total: totalBookmarks,
-        pages: Math.ceil(totalBookmarks / limit) || 1
+        total: totalUserProperties,
+        pages: Math.ceil(totalUserProperties / limit) || 1
       }
     });
 
@@ -67,33 +66,72 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Property ID is required' });
     }
 
-    // Check if the property exists
     const propertyExists = await Property.exists({ _id: propertyId });
     if (!propertyExists) {
       return res.status(404).json({ success: false, error: 'Property not found' });
     }
 
-    // Try creating the bookmark, relying on the unique index to prevent duplicates
     try {
-      const newBookmark = await Bookmark.create({
+      const newUserProperty = await UserProperty.create({
         userId: req.user.id,
         propertyId
       });
 
-      // Increment property's bookmark count
       await Property.findByIdAndUpdate(propertyId, { $inc: { bookmarkCount: 1 } });
 
       return res.status(201).json({
         success: true,
-        data: newBookmark
+        data: newUserProperty
       });
     } catch (err) {
-      // 11000 is mongodb duplicate key error
       if (err.code === 11000) {
         return res.status(400).json({ success: false, error: 'Property already bookmarked' });
       }
       throw err;
     }
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @route   PUT /api/bookmarks/:propertyId/note
+ * @desc    Update personal note for a property (auto-bookmark if not exists)
+ * @access  Private
+ */
+router.put('/:propertyId/note', async (req, res, next) => {
+  try {
+    const { propertyId } = req.params;
+    const { note } = req.body;
+
+    let userProperty = await UserProperty.findOne({
+      userId: req.user.id,
+      propertyId
+    });
+
+    if (!userProperty) {
+      // Auto-bookmark logic
+      const propertyExists = await Property.exists({ _id: propertyId });
+      if (!propertyExists) {
+        return res.status(404).json({ success: false, error: 'Property not found' });
+      }
+
+      userProperty = await UserProperty.create({
+        userId: req.user.id,
+        propertyId,
+        note
+      });
+
+      await Property.findByIdAndUpdate(propertyId, { $inc: { bookmarkCount: 1 } });
+    } else {
+      userProperty.note = note;
+      await userProperty.save();
+    }
+
+    res.json({
+      success: true,
+      data: userProperty
+    });
   } catch (err) {
     next(err);
   }
@@ -108,7 +146,7 @@ router.delete('/:propertyId', async (req, res, next) => {
   try {
     const { propertyId } = req.params;
 
-    const result = await Bookmark.findOneAndDelete({
+    const result = await UserProperty.findOneAndDelete({
       userId: req.user.id,
       propertyId
     });
@@ -117,7 +155,6 @@ router.delete('/:propertyId', async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Bookmark not found' });
     }
 
-    // Decrement property's bookmark count
     await Property.findByIdAndUpdate(propertyId, { $inc: { bookmarkCount: -1 } });
 
     res.json({

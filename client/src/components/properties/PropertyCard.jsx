@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Tag, Typography, Space, Row, Col } from 'antd';
 import { EnvironmentOutlined, HomeOutlined, CompressOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import BookmarkButton from './BookmarkButton';
@@ -6,6 +7,7 @@ import BookmarkButton from './BookmarkButton';
 const { Title, Text } = Typography;
 
 const PropertyCard = ({ property }) => {
+  const navigate = useNavigate();
   const {
     address,
     totalPrice,
@@ -24,6 +26,7 @@ const PropertyCard = ({ property }) => {
   return (
     <Card
       hoverable
+      onClick={() => navigate(`/properties/${property._id}`)}
       cover={<img alt="property" src={imageUrl} style={{ height: 200, objectFit: 'cover' }} />}
       style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
       bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px' }}

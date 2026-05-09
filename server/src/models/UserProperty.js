@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const bookmarkSchema = new mongoose.Schema(
+const userPropertySchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -23,8 +23,8 @@ const bookmarkSchema = new mongoose.Schema(
   }
 );
 
-// Compound unique index — each user can bookmark a property only once
-bookmarkSchema.index({ userId: 1, propertyId: 1 }, { unique: true });
-bookmarkSchema.index({ userId: 1, createdAt: -1 });
+// Compound unique index — each user can save a property only once
+userPropertySchema.index({ userId: 1, propertyId: 1 }, { unique: true });
+userPropertySchema.index({ userId: 1, createdAt: -1 });
 
-module.exports = mongoose.model('Bookmark', bookmarkSchema);
+module.exports = mongoose.model('UserProperty', userPropertySchema);

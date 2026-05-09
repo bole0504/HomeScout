@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import AdminLayout from './layouts/AdminLayout';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import PropertyListPage from './pages/PropertyListPage';
+import PropertyDetailsPage from './pages/PropertyDetailsPage';
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { isAuthenticated, isAdmin, loading } = useAuth();
@@ -45,6 +46,7 @@ function App() {
       >
         <Route index element={<Navigate to="/properties" replace />} />
         <Route path="properties" element={<PropertyListPage />} />
+        <Route path="properties/:id" element={<PropertyDetailsPage />} />
 
         {/* Admin only sub-routes */}
         <Route element={<ProtectedRoute requireAdmin={true} />}>

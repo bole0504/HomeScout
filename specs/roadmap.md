@@ -91,7 +91,7 @@ Mỗi Sprint/Phase sẽ:
 - [x] Tab "Đang Theo Dõi" trong PropertyListPage
 - [x] Bookmark count hiển thị trên card
 - [x] Custom hook `useBookmark`
-- [ ] Property Details Page
+- [x] Property Details Page
 
 ### Acceptance Criteria
 - User bookmark BĐS → icon heart đổi trạng thái

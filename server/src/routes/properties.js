@@ -1,6 +1,6 @@
 const express = require('express');
 const Property = require('../models/Property');
-const Bookmark = require('../models/Bookmark');
+const UserProperty = require('../models/UserProperty');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -60,7 +60,7 @@ router.get('/', async (req, res, next) => {
     const total = await Property.countDocuments(query);
 
     const propertyIds = properties.map(p => p._id);
-    const bookmarks = await Bookmark.find({
+    const bookmarks = await UserProperty.find({
       userId: req.user.id,
       propertyId: { $in: propertyIds }
     });
@@ -117,13 +117,14 @@ router.get('/:id', async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Property not found' });
     }
 
-    const bookmark = await Bookmark.findOne({ userId: req.user.id, propertyId: property._id });
+    const bookmark = await UserProperty.findOne({ userId: req.user.id, propertyId: property._id });
 
     res.json({ 
       success: true, 
       data: {
         ...property.toObject(),
-        isBookmarked: !!bookmark
+        isBookmarked: !!bookmark,
+        bookmarkNote: bookmark ? bookmark.note : ''
       } 
     });
   } catch (err) {
