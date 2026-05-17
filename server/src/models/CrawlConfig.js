@@ -24,16 +24,23 @@ const crawlConfigSchema = new mongoose.Schema(
       listContainer: { type: String, default: '' },
       itemSelector: { type: String, default: '' },
       fields: {
+        title: { type: String, default: '' }, // New: selector for listing title
         address: { type: String, default: '' },
+        city: { type: String, default: '' },
+        district: { type: String, default: '' },
+        ward: { type: String, default: '' },
+        street: { type: String, default: '' },
+        legal: { type: String, default: '' },
+        publishedDate: { type: String, default: '' }, // New: selector for listing date
         price: { type: String, default: '' },
         pricePerM2: { type: String, default: '' },
         area: { type: String, default: '' },
         bedrooms: { type: String, default: '' },
         wc: { type: String, default: '' },
         phone: { type: String, default: '' },
-        revealPhoneSelector: { type: String, default: '' }, // New: selector to click to show phone
+        revealPhoneSelector: { type: String, default: '' },
         description: { type: String, default: '' },
-        images: { type: String, default: '' }, // New: selector for images (can be multiple)
+        images: { type: String, default: '' },
         detailLink: { type: String, default: '' },
       },
     },

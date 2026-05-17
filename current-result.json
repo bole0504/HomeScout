@@ -1,0 +1,42 @@
+{
+    "title": "BÁN ĐẤT TẶNG NHÀ,ĐƯỜNG OTO TRUNG TÂM BẮC NHA TRANG. LH O399.57.5577",
+    "address": {
+        "city": "Thành phố Huế",
+        "district": "",
+        "ward": "",
+        "street": "",
+        "fullAddress": "Thành phố Huế"
+    },
+    "city": "",
+    "district": "",
+    "ward": "",
+    "street": "",
+    "legal": "",
+    "publishedDate": "",
+    "price": "4,8 tỷ",
+    "pricePerM2": "33,06 tr/m²",
+    "area": "145,2 m²",
+    "bedrooms": "3",
+    "wc": "1",
+    "phone": "683601",
+    "description": "BÁN NHANH LÔ ĐẤT BẮC NHA TRANG - Diện tích 145.2m² ngang 6m - Đường rộng 3,2m quy hoạch 27m nối xuống bãi tắm biển. -Hướng đông nam - Nhà cấp 4 sạch đẹp, mát mẻ: 3PN, 1wc, sân đỗ oto rộng. - Cách bãi tắm biển 5p chạy bộ - Cách chợ Vĩnh Hải, bệnh viện 5p chạy xe - Cách trường học 1,2,3 từ 3p-7p - Cách bến xe Phía Bắc 500m - Cách trường đại học Nha Trang, Tôn Đức Thắng 10p Phù hợp cho người mua ở, xây nhà vườn, sửa cho thuê, bán. Đặc biệt, giá chưa...",
+    "images": [
+        "https://file4.batdongsan.com.vn/crop/562x284/2026/05/09/20260509142033-b464_wm.jpg",
+        "https://file4.batdongsan.com.vn/crop/283x141/2026/05/09/20260509142028-6b4a_wm.jpg",
+        "https://file4.batdongsan.com.vn/crop/140x140/2026/05/09/20260509142029-f565_wm.jpg",
+        "https://file4.batdongsan.com.vn/crop/140x140/2026/05/09/20260509142030-2149_wm.jpg"
+    ],
+    "detailLink": "https://batdongsan.com.vn/ban-nha-rieng-duong-phu-xuong-phuong-vinh-hai-350/ban-at-tang-uong-oto-trung-tam-bac-trang-lh-o399-57-5577-pr45700611",
+    "roadWidth": 3.2
+},
+{
+    "expected": {
+        "address": {
+            "city": "NHA TRANG",
+            "district": "",
+            "ward": "",
+            "street": "",
+            "fullAddress": "Thành phố Huế"
+        },
+    }
+}

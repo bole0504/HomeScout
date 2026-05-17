@@ -204,16 +204,38 @@ const CrawlConfigForm = ({ visible, onCancel, onSubmit, initialData }) => {
               </Col>
             </Row>
 
-            <Divider orientation="left">Field Selectors (Tương đối so với Item)</Divider>
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item name={['selectors', 'fields', 'address']} label="Địa chỉ">
+                <Divider orientation="left">1. Địa chỉ & Thời gian</Divider>
+                <Form.Item name={['selectors', 'fields', 'address']} label="Địa chỉ đầy đủ (Chuỗi text)">
                   <Input placeholder=".re__card-location" />
+                </Form.Item>
+                <Form.Item name={['selectors', 'fields', 'street']} label="Tên đường">
+                  <Input placeholder=".re__card-street" />
+                </Form.Item>
+                <Form.Item name={['selectors', 'fields', 'ward']} label="Phường/Xã">
+                  <Input placeholder=".re__card-ward" />
+                </Form.Item>
+                <Form.Item name={['selectors', 'fields', 'district']} label="Quận/Huyện">
+                  <Input placeholder=".re__card-district" />
+                </Form.Item>
+                <Form.Item name={['selectors', 'fields', 'city']} label="Tỉnh/Thành phố">
+                  <Input placeholder=".re__card-city" />
+                </Form.Item>
+                <Form.Item name={['selectors', 'fields', 'publishedDate']} label="Ngày đăng tin">
+                  <Input placeholder=".re__card-published-date" />
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Divider orientation="left">2. Thông tin BĐS</Divider>
+                <Form.Item name={['selectors', 'fields', 'title']} label="Tiêu đề tin đăng">
+                  <Input placeholder=".re__card-title" />
                 </Form.Item>
                 <Form.Item name={['selectors', 'fields', 'price']} label="Giá niêm yết">
                   <Input placeholder=".re__card-config-price" />
                 </Form.Item>
-                <Form.Item name={['selectors', 'fields', 'pricePerM2']} label="Giá / m² (Nếu website có sẵn)">
+                <Form.Item name={['selectors', 'fields', 'pricePerM2']} label="Giá / m²">
                   <Input placeholder=".re__card-config-price-per-m2" />
                 </Form.Item>
                 <Form.Item name={['selectors', 'fields', 'area']} label="Diện tích">
@@ -226,32 +248,39 @@ const CrawlConfigForm = ({ visible, onCancel, onSubmit, initialData }) => {
                   <Input placeholder=".re__card-config-toilet" />
                 </Form.Item>
               </Col>
+            </Row>
+
+            <Row gutter={16}>
               <Col span={12}>
+                <Divider orientation="left">3. Pháp lý</Divider>
+                <Form.Item name={['selectors', 'fields', 'legal']} label="Tình trạng pháp lý (Sổ đỏ/hồng)">
+                  <Input placeholder=".re__card-legal" />
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Divider orientation="left">4. Thông tin khác</Divider>
                 <Form.Item 
                   name={['selectors', 'fields', 'phone']} 
                   label="Số điện thoại"
-                  tooltip="Selector của element chứa số điện thoại sau khi đã hiện"
+                  tooltip="Element chứa số điện thoại"
                 >
                   <Input placeholder=".re__card-contact-phone" />
                 </Form.Item>
                 <Form.Item 
                   name={['selectors', 'fields', 'revealPhoneSelector']} 
-                  label="Selector nút 'Hiện số điện thoại'"
-                  tooltip="Hệ thống sẽ tự động Click vào nút này trước khi lấy số điện thoại"
+                  label="Nút hiện số ĐT"
+                  tooltip="Selector nút để Click hiện số"
                 >
-                  <Input placeholder=".re__card-contact-phone .btn-reveal" />
+                  <Input placeholder=".btn-reveal" />
                 </Form.Item>
                 <Form.Item name={['selectors', 'fields', 'description']} label="Mô tả">
                   <Input placeholder=".re__card-description" />
                 </Form.Item>
-                <Form.Item name={['selectors', 'fields', 'images']} label="Selector Ảnh (Multiple)">
+                <Form.Item name={['selectors', 'fields', 'images']} label="Selector Ảnh">
                   <Input placeholder=".re__card-image img" />
                 </Form.Item>
-                <Form.Item 
-                  name={['selectors', 'fields', 'detailLink']} 
-                  label="Link chi tiết (Link vào trang riêng)"
-                  tooltip="Thường là thẻ <a> bao quanh toàn bộ tin hoặc nút 'Xem chi tiết'"
-                >
+                <Form.Item name={['selectors', 'fields', 'detailLink']} label="Link chi tiết">
                   <Input placeholder="a" />
                 </Form.Item>
               </Col>
@@ -268,7 +297,30 @@ const CrawlConfigForm = ({ visible, onCancel, onSubmit, initialData }) => {
               ) : testResults ? (
                 <Table 
                   dataSource={testResults} 
-                  columns={testColumns} 
+                  columns={[
+                    { title: 'Giá', dataIndex: 'price', key: 'price' },
+                    { title: 'Diện tích', dataIndex: 'area', key: 'area' },
+                    { 
+                      title: 'Địa chỉ chi tiết', 
+                      dataIndex: 'address', 
+                      key: 'address',
+                      render: (addr) => (
+                        <span>
+                          {addr.street ? `${addr.street}, ` : ''}
+                          {addr.ward ? `${addr.ward}, ` : ''}
+                          {addr.district ? `${addr.district}, ` : ''}
+                          {addr.city || addr.fullAddress || ''}
+                        </span>
+                      )
+                    },
+                    { title: 'Ngày đăng', dataIndex: 'publishedDate', key: 'publishedDate' },
+                    { 
+                      title: 'Link', 
+                      dataIndex: 'detailLink', 
+                      key: 'detailLink',
+                      render: link => <Link href={link} target="_blank">Xem nguồn</Link>
+                    },
+                  ]} 
                   pagination={false} 
                   size="small"
                   rowKey={(record, index) => index}

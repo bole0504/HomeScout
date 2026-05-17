@@ -115,9 +115,9 @@ Mỗi Sprint/Phase sẽ:
 - [x] CrawlConfig model & schema
 - [x] Crawl engine: navigate → extract → parse (Multi-field extraction)
 - [x] Logic bóc tách NLP từ description (width, length, floors, legal)
-- [ ] Data normalization (address, price, area)
-- [ ] API endpoints: POST `/api/crawl/configs`
-- [ ] Client: Save config flow hoàn thiện
+- [x] Data normalization (address, price, area)
+- [x] API endpoints: POST `/api/crawl/configs`
+- [x] Client: Save config flow hoàn thiện
 
 ### Phase 4d: AI Selector Helper
 - [ ] Integrated Gemini API on Backend

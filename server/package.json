@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "test": "mocha test/**/*.spec.js"
   },
   "keywords": [
     "real-estate",
@@ -31,6 +32,8 @@
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "devDependencies": {
+    "chai": "^6.2.2",
+    "mocha": "^11.7.5",
     "nodemon": "^3.1.14"
   }
 }
