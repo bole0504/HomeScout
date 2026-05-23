@@ -234,6 +234,63 @@ class CrawlService {
       }
     }
   }
+
+  /**
+   * Extract a simplified version of the DOM for AI analysis
+   * @param {string} url - Target URL
+   * @returns {Promise<string>} - Simplified HTML snippet
+   */
+  async getDOMSnippet(url) {
+    let browser;
+    try {
+      browser = await puppeteer.launch({
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1280, height: 1000 });
+      await page.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+      );
+
+      console.log(`Getting DOM snippet from: ${url}`);
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+
+      // Scroll a bit to trigger lazy loading
+      await page.evaluate(() => window.scrollBy(0, 1000));
+      await new Promise(r => setTimeout(r, 1000));
+
+      const simplifiedHTML = await page.evaluate(() => {
+        // Clone the body to avoid modifying the actual page
+        const bodyClone = document.body.cloneNode(true);
+        
+        // Remove non-essential elements for structural analysis
+        const tagsToRemove = ['script', 'style', 'svg', 'iframe', 'canvas', 'noscript', 'header', 'footer', 'nav'];
+        tagsToRemove.forEach(tag => {
+          bodyClone.querySelectorAll(tag).forEach(el => el.remove());
+        });
+
+        // Optional: Remove comments
+        const iterator = document.createNodeIterator(bodyClone, NodeFilter.SHOW_COMMENT);
+        let currentNode;
+        while (currentNode = iterator.nextNode()) {
+          currentNode.parentNode.removeChild(currentNode);
+        }
+
+        // Return a portion of the body (first 20000 chars is usually enough for a few cards)
+        const content = bodyClone.innerHTML;
+        return content.substring(0, 20000); 
+      });
+
+      return simplifiedHTML;
+    } catch (error) {
+      console.error('getDOMSnippet error:', error);
+      throw error;
+    } finally {
+      if (browser) await browser.close();
+    }
+  }
 }
 
 module.exports = new CrawlService();

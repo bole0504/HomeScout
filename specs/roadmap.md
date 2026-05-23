@@ -120,10 +120,10 @@ Mỗi Sprint/Phase sẽ:
 - [x] Client: Save config flow hoàn thiện
 
 ### Phase 4d: AI Selector Helper
-- [ ] Integrated Gemini API on Backend
-- [ ] Endpoint: POST `/api/crawl/ai-suggest` (Analyze DOM and suggest selectors)
-- [ ] Client: "AI Helper" button in CrawlConfigForm
-- [ ] Auto-fill form fields results from AI
+- [x] Integrated Gemini API on Backend
+- [x] Endpoint: POST `/api/crawl/ai-suggest` (Analyze DOM and suggest selectors)
+- [x] Client: "AI Helper" button in CrawlConfigForm
+- [x] Auto-fill form fields results from AI
 
 ### Phase 4c: Data Validation & Deduplication
 **Ref**: [property-valuation-data.md](./property-valuation-data.md) — Crawl Patterns & NLP sections

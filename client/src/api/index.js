@@ -74,6 +74,7 @@ export const crawlAPI = {
   deleteConfig: (id) => api.delete(`/crawl/configs/${id}`),
   trigger: (id) => api.post(`/crawl/trigger/${id}`),
   triggerAll: () => api.post('/crawl/trigger-all'),
+  aiSuggest: (url) => api.post('/crawl/ai-suggest', { url }),
 };
 
 // Users (Admin)

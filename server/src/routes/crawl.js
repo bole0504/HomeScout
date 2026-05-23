@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const CrawlConfig = require('../models/CrawlConfig');
 const CrawlService = require('../services/CrawlService');
+const AIService = require('../services/AIService');
 const { auth } = require('../middleware/auth');
 const { admin } = require('../middleware/admin');
 
@@ -93,6 +94,35 @@ router.post('/test', auth, admin, async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Crawl test failed', 
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * @desc    Get suggested selectors from AI
+ * @route   POST /api/crawl/ai-suggest
+ * @access  Private/Admin
+ */
+router.post('/ai-suggest', auth, admin, async (req, res) => {
+  const { url } = req.body;
+
+  if (!url) {
+    return res.status(400).json({ message: 'URL is required' });
+  }
+
+  try {
+    const htmlSnippet = await CrawlService.getDOMSnippet(url);
+    const suggestions = await AIService.suggestSelectors(htmlSnippet);
+    
+    res.json({
+      success: true,
+      suggestions
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'AI Suggestion failed', 
       error: error.message 
     });
   }

@@ -15,7 +15,7 @@ import {
   Space,
   Empty
 } from 'antd';
-import { PlayCircleOutlined, SaveOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined, SaveOutlined, RobotOutlined } from '@ant-design/icons';
 import { crawlAPI } from '../../api';
 
 const { Title, Text, Link } = Typography;
@@ -24,6 +24,7 @@ const CrawlConfigForm = ({ visible, onCancel, onSubmit, initialData }) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
   const [testResults, setTestResults] = useState(null);
   const [activeTab, setActiveTab] = useState('basic');
 
@@ -63,6 +64,42 @@ const CrawlConfigForm = ({ visible, onCancel, onSubmit, initialData }) => {
       message.error(error.response?.data?.message || 'Có lỗi xảy ra');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleAISuggest = async () => {
+    const url = form.getFieldValue('url');
+    if (!url) {
+      message.warning('Vui lòng nhập URL trước khi dùng AI Helper');
+      return;
+    }
+
+    setSuggesting(true);
+    try {
+      const { data } = await crawlAPI.aiSuggest(url);
+      if (data.success && data.suggestions) {
+        const currentValues = form.getFieldsValue();
+        form.setFieldsValue({
+          ...currentValues,
+          selectors: {
+            ...currentValues.selectors,
+            ...data.suggestions,
+            fields: {
+              ...(currentValues.selectors?.fields || {}),
+              ...(data.suggestions.fields || {})
+            }
+          }
+        });
+        message.success('AI đã gợi ý xong! Vui lòng kiểm tra tab DOM Selectors');
+        setActiveTab('selectors');
+      } else {
+        message.error('AI không tìm thấy gợi ý phù hợp');
+      }
+    } catch (error) {
+      console.error('AI Suggest Error:', error);
+      message.error(error.response?.data?.message || 'Lỗi khi gọi AI gợi ý');
+    } finally {
+      setSuggesting(false);
     }
   };
 
@@ -171,7 +208,21 @@ const CrawlConfigForm = ({ visible, onCancel, onSubmit, initialData }) => {
               label="URL Mục tiêu (Trang danh sách)"
               rules={[{ required: true, message: 'Vui lòng nhập URL' }]}
             >
-              <Input placeholder="https://batdongsan.com.vn/nha-dat-ban" />
+              <Input 
+                placeholder="https://batdongsan.com.vn/nha-dat-ban" 
+                addonAfter={
+                  <Button 
+                    type="text" 
+                    size="small" 
+                    icon={<RobotOutlined />} 
+                    onClick={handleAISuggest}
+                    loading={suggesting}
+                    style={{ color: '#1890ff', border: 'none', height: 'auto', padding: '0 4px' }}
+                  >
+                    AI Helper
+                  </Button>
+                }
+              />
             </Form.Item>
           </Tabs.TabPane>
 
