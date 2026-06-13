@@ -61,6 +61,13 @@ const crawlConfigSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // Scheduler interval in minutes (default: 15)
+    interval: {
+      type: Number,
+      default: 15,
+      min: 1,
+      max: 1440, // max 24 hours
+    },
     lastCrawledAt: {
       type: Date,
     },

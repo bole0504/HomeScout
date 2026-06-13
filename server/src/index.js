@@ -44,6 +44,11 @@ app.use(errorHandler);
 const startServer = async () => {
   try {
     await connectDatabase();
+
+    // Start the scheduler after DB is ready
+    const SchedulerService = require('./services/SchedulerService');
+    await SchedulerService.init();
+
     app.listen(PORT, () => {
       console.log(`\n🚀 CapNhatGia Server running on port ${PORT}`);
       console.log(`📍 Health check: http://localhost:${PORT}/api/health`);

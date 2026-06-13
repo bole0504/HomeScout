@@ -190,6 +190,9 @@ const propertySchema = new mongoose.Schema(
       enum: Object.values(PROPERTY_STATUS),
       default: PROPERTY_STATUS.ACTIVE,
     },
+    publishedDate: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

@@ -128,16 +128,16 @@ Mỗi Sprint/Phase sẽ:
 ### Phase 4c: Data Validation & Deduplication
 **Ref**: [property-valuation-data.md](./property-valuation-data.md) — Crawl Patterns & NLP sections
 
-- [ ] DataValidator service:
+- [x] DataValidator service:
   - Required fields check
   - Address normalization (Vietnam provinces/districts mapping)
   - Price format parsing ("2 tỷ", "35 triệu/m²", etc.)
   - Phone number cleanup
-- [ ] Deduplicator service:
+- [x] Deduplicator service:
   - Content hash generation
   - Upsert logic (update if newer, skip if same)
-- [ ] DataCompletenessScore calculator
-- [ ] Integration test với batdongsan.com.vn (Success with hardcoded selectors)
+- [x] DataCompletenessScore calculator
+- [x] Integration test với batdongsan.com.vn (18/18 Mocha tests passing)
 
 ### Acceptance Criteria
 - Admin nhập URL batdongsan.com.vn → DOM learner trả về selectors hợp lý

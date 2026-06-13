@@ -11,51 +11,201 @@ const nlpProcessor = {
   extractFromDescription(text) {
     if (!text) return {};
 
-    const info = {};
+    const land = {};
+    const building = {};
+    const legal = {};
+    const location = {};
+    const amenities = { negativeFactors: [] };
 
+    // === LAND INFO ===
     // 1. Dimensions (W x L)
-    // Matches: 5x20, 5.5 x 15, 8 x 25m, 5m x 20m
     const dimsMatch = text.match(/(\d+[.,]\d+|\d+)\s*[xX*]\s*(\d+[.,]\d+|\d+)/);
     if (dimsMatch) {
-      info.width = parseFloat(dimsMatch[1].replace(',', '.'));
-      info.length = parseFloat(dimsMatch[2].replace(',', '.'));
+      land.frontWidth = parseFloat(dimsMatch[1].replace(',', '.'));
+      land.depth = parseFloat(dimsMatch[2].replace(',', '.'));
     }
 
-    // 2. Floors
-    // Matches: 1 trệt 2 lầu, 3 tầng, Hầm 7 Tầng
+    // 2. Shape
+    if (text.match(/nở hậu/i)) {
+      land.shape = 'nở hậu';
+    } else if (text.match(/tóp hậu/i)) {
+      land.shape = 'tóp hậu';
+    } else if (text.match(/vuông đẹp|vuông vức|vuông vắn|vuông đét/i)) {
+      land.shape = 'vuông đẹp';
+    } else if (text.match(/tam giác/i)) {
+      land.shape = 'tam giác';
+    } else if (text.match(/méo|không vuông/i)) {
+      land.shape = 'méo / không vuông';
+    }
+
+    // 3. Elevation
+    if (text.match(/cao hơn đường/i)) {
+      land.elevation = 'cao hơn đường';
+    } else if (text.match(/bằng đường/i)) {
+      land.elevation = 'bằng đường';
+    } else if (text.match(/thấp hơn đường/i)) {
+      land.elevation = 'thấp hơn đường';
+    }
+
+    // 4. Slope
+    if (text.match(/(bị dốc|đất dốc)/i)) {
+      land.slope = true;
+    } else if (text.match(/(phẳng|bằng phẳng)/i)) {
+      land.slope = false;
+    }
+
+    // 5. Direction
+    const dirMatch = text.match(/(hướng|mặt tiền hướng|huong)[:\s]*(Đông Nam|Tây Nam|Đông Bắc|Tây Bắc|Đông|Tây|Nam|Bắc|dong nam|tay nam|dong bac|tay bac|dong|tay|nam|bac)/i);
+    if (dirMatch) {
+      const dirText = dirMatch[2].toLowerCase();
+      if (dirText.includes('đông nam') || dirText.includes('dong nam')) land.direction = 'Đông Nam';
+      else if (dirText.includes('tây nam') || dirText.includes('tay nam')) land.direction = 'Tây Nam';
+      else if (dirText.includes('đông bắc') || dirText.includes('dong bac')) land.direction = 'Đông Bắc';
+      else if (dirText.includes('tây bắc') || dirText.includes('tay bac')) land.direction = 'Tây Bắc';
+      else if (dirText.includes('đông') || dirText.includes('dong')) land.direction = 'Đông';
+      else if (dirText.includes('tây') || dirText.includes('tay')) land.direction = 'Tây';
+      else if (dirText.includes('nam')) land.direction = 'Nam';
+      else if (dirText.includes('bắc') || dirText.includes('bac')) land.direction = 'Bắc';
+    }
+
+    // === BUILDING INFO ===
+    // 1. Floors
     const floorsMatch = text.match(/(\d+)\s*(tầng|lầu)/i);
     if (floorsMatch) {
-      info.floors = parseInt(floorsMatch[1]);
+      building.floors = parseInt(floorsMatch[1]);
     } else if (text.match(/1 trệt\s*(\d*)\s*lầu/i)) {
       const lầu = text.match(/1 trệt\s*(\d+)\s*lầu/i);
-      info.floors = lầu ? parseInt(lầu[1]) + 1 : 1;
+      building.floors = lầu ? parseInt(lầu[1]) + 1 : 1;
     }
 
-    // 3. Legal status
-    if (text.match(/sổ hồng|sổ đỏ|pháp lý rõ ràng|đã có sổ/i)) {
-      info.legal = 'Sổ hồng/Sổ đỏ';
-    } else if (text.match(/giấy tay|đang chờ sổ/i)) {
-      info.legal = 'Chưa có sổ';
+    // 2. Building Type
+    if (text.match(/đất trống|đất thổ cư|đất nền/i)) {
+      building.type = 'đất trống';
+    } else if (text.match(/nhà tạm|nhà tôn/i)) {
+      building.type = 'nhà tạm';
+    } else if (text.match(/cấp 4/i)) {
+      building.type = 'nhà cấp 4';
+    } else if (building.floors > 1 || text.match(/(nhiều tầng|tấm|lầu)/i)) {
+      building.type = 'nhà nhiều tầng';
+    } else if (building.floors === 1 || text.match(/(1 tầng|1 lầu|1 trệt)/i)) {
+      building.type = 'nhà 1 tầng';
     }
 
-    // 4. Position / Road width
+    // 3. Structure
+    if (text.match(/tôn|gỗ|lá|tạm bợ/i)) {
+      building.structure = 'tạm';
+    } else if (text.match(/BTCT|bê tông cốt thép|đúc kiên cố/i)) {
+      building.structure = 'BTCT';
+    } else if (text.match(/cao cấp|biệt thự|villa|premium/i)) {
+      building.structure = 'cao cấp';
+    }
+
+    // 4. Condition
+    if (text.match(/mới xây|vừa xây|mới tinh|đẹp keng|mới đét/i)) {
+      building.condition = 'mới';
+    } else if (text.match(/ở ngay|ở luôn|ở tốt|kiên cố/i)) {
+      building.condition = 'ở tốt';
+    } else if (text.match(/xuống cấp|cũ nát|sửa lại/i)) {
+      building.condition = 'xuống cấp';
+    }
+
+    // 5. Rentable
+    if (text.match(/(cho thuê|thu nhập|rental|dòng tiền)/i)) {
+      building.rentable = true;
+    }
+
+    // === LEGAL INFO ===
+    // 1. Title Deed
+    if (text.match(/sổ hồng|shr|sổ riêng/i)) {
+      legal.titleDeed = 'sổ hồng';
+    } else if (text.match(/sổ đỏ/i)) {
+      legal.titleDeed = 'sổ đỏ';
+    } else if (text.match(/chờ sổ/i)) {
+      legal.titleDeed = 'chờ sổ';
+    } else if (text.match(/chưa có sổ|chưa sổ|giấy tay|không sổ/i)) {
+      legal.titleDeed = 'chưa có sổ';
+    }
+
+    // 2. Owner Type
+    if (text.match(/chính chủ|bán chính chủ/i)) {
+      legal.ownerType = 'chính chủ';
+    } else if (text.match(/môi giới|trung gian/i)) {
+      legal.ownerType = 'môi giới';
+    } else {
+      legal.ownerType = 'không rõ';
+    }
+
+    // 3. Shared access
+    if (text.match(/hẻm chung|lối đi chung/i)) {
+      legal.sharedAccess = true;
+    }
+
+    // 4. Construction permit
+    if (text.match(/hoàn công|đã hoàn công/i)) {
+      legal.constructionPermit = true;
+    } else if (text.match(/chưa hoàn công/i)) {
+      legal.constructionPermit = false;
+    }
+
+    // === LOCATION DETAILS ===
+    // 1. Road width
     const roadMatch = text.match(/(đường|ngõ|hẻm)\s*(rộng|vào)?\s*(\d+[.,]\d+|\d+)\s*m/i);
     if (roadMatch) {
-      info.roadWidth = parseFloat(roadMatch[3].replace(',', '.'));
+      location.roadWidth = parseFloat(roadMatch[3].replace(',', '.'));
     }
 
-    // 5. Street Name (Basic heuristic)
-    // Avoid descriptive words like "biệt thự", "văn phòng" if they aren't followed by a real name
-    const streetMatch = text.match(/(mặt tiền đường|đường|phố)\s+([A-ZÀ-Ỹ\d][a-zà-ỹ\d]*(\s+[A-ZÀ-Ỹ\d][a-zà-ỹ\d]*)*)/i);
-    if (streetMatch) {
-      const potential = streetMatch[2].trim();
-      // Filter out some false positives
-      if (!/^(cao cấp|biệt thự|văn phòng|hiện đại|đẹp|giá rẻ)$/i.test(potential)) {
-        info.street = potential;
+    // 2. Alley type
+    if (text.match(/mặt tiền|mt/i)) {
+      location.alleyType = 'mặt tiền';
+    } else if (text.match(/hẻm thông|ngõ thông/i)) {
+      location.alleyType = 'hẻm thông';
+    } else if (text.match(/hẻm cụt|ngõ cụt/i)) {
+      location.alleyType = 'hẻm cụt';
+    }
+
+    // 3. Car access
+    if (text.match(/(hẻm xe hơi|hxh|xe hơi|ô tô|xe hơi vào|xe hơi tránh|đường xe hơi)/i)) {
+      location.carAccess = true;
+    } else if (location.roadWidth && location.roadWidth >= 4) {
+      location.carAccess = true;
+    }
+
+    // === AMENITIES ===
+    if (text.match(/trường|học/i)) amenities.nearSchool = true;
+    if (text.match(/chợ|siêu thị/i)) amenities.nearMarket = true;
+    if (text.match(/công viên|hồ|sông/i)) amenities.nearPark = true;
+
+    // Negative factors
+    const negativePatterns = {
+      'nghĩa trang': /nghĩa trang|mộ/i,
+      'bãi rác': /bãi rác|rác/i,
+      'cột điện cao thế': /cột điện cao thế|cao thế/i,
+      'đường ray xe lửa': /đường ray|tàu hỏa/i
+    };
+    for (const [factor, regex] of Object.entries(negativePatterns)) {
+      if (text.match(regex)) {
+        amenities.negativeFactors.push(factor);
       }
     }
 
-    return info;
+    // Street Name (Basic heuristic)
+    let street = '';
+    const streetMatch = text.match(/(mặt tiền đường|đường|phố)\s+([A-ZÀ-Ỹ\d][a-zà-ỹ\d]*(\s+[A-ZÀ-Ỹ\d][a-zà-ỹ\d]*)*)/i);
+    if (streetMatch) {
+      const potential = streetMatch[2].trim();
+      if (!/^(cao cấp|biệt thự|văn phòng|hiện đại|đẹp|giá rẻ)$/i.test(potential)) {
+        street = potential;
+      }
+    }
+
+    return {
+      land,
+      building,
+      legal,
+      location,
+      amenities,
+      street
+    };
   },
 
   /**
