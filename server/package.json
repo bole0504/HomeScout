@@ -18,6 +18,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
+    "cloakbrowser": "^0.3.31",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -27,9 +28,7 @@
     "mongoose": "^9.6.1",
     "morgan": "^1.10.1",
     "node-cron": "^4.2.1",
-    "puppeteer": "^24.43.0",
-    "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "puppeteer-core": "^25.1.0"
   },
   "devDependencies": {
     "chai": "^6.2.2",

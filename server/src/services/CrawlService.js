@@ -1,10 +1,16 @@
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const nlpProcessor = require('../utils/nlpProcessor');
 const addressParser = require('../utils/location/AddressParser');
 const dataNormalizer = require('../utils/DataNormalizer');
 
-puppeteer.use(StealthPlugin());
+// CloakBrowser is ESM-only — load once and cache
+let _launch = null;
+async function getBrowserLaunch() {
+  if (!_launch) {
+    const mod = await import('cloakbrowser/puppeteer');
+    _launch = mod.launch;
+  }
+  return _launch;
+}
 
 class CrawlService {
   /**
@@ -16,18 +22,15 @@ class CrawlService {
   async testCrawl(url, selectors) {
     let browser;
     try {
-      browser = await puppeteer.launch({
-        headless: 'new',
+      const launch = await getBrowserLaunch();
+      browser = await launch({
+        headless: true,
+        humanize: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
 
       const page = await browser.newPage();
       await page.setViewport({ width: 1280, height: 800 });
-      
-      // Set a realistic user agent
-      await page.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
-      );
 
       console.log(`Navigating to: ${url}`);
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
@@ -70,26 +73,36 @@ class CrawlService {
 
           const revealButtons = await page.$$(selectors.fields.revealPhoneSelector);
           console.log(`[RevealPhone] Found ${revealButtons.length} buttons.`);
-          
+
           for (let i = 0; i < revealButtons.length; i++) {
             try {
               const rect = await revealButtons[i].boundingBox();
               if (rect) {
-                // Click precisely in the middle of the button
-                // This bypasses many obstruction issues
                 await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2, { delay: 50 });
               } else {
-                // Fallback if boundingBox fails
                 await revealButtons[i].click({ delay: 50 }).catch(() => {});
               }
-              await new Promise(r => setTimeout(r, 100));
+              // Wait between clicks to avoid rate limiting
+              await new Promise(r => setTimeout(r, 300));
             } catch (clickErr) {
               console.warn(`[RevealPhone] Click error at item ${i + 1}`);
             }
           }
-          
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          console.log('[RevealPhone] Finished sequence.');
+
+          // Wait for DOM to update: poll until no *** remain, max 5s
+          try {
+            await page.waitForFunction(
+              (sel) => {
+                const btns = document.querySelectorAll(sel);
+                return Array.from(btns).every(btn => !btn.innerText.includes('***'));
+              },
+              { timeout: 5000 },
+              selectors.fields.revealPhoneSelector
+            );
+            console.log('[RevealPhone] All phones revealed.');
+          } catch {
+            console.warn('[RevealPhone] Timeout waiting for reveal — some phones may still be masked.');
+          }
         } catch (e) {
           console.log('[RevealPhone] Critical error:', e.message);
         }
@@ -117,12 +130,19 @@ class CrawlService {
             if (!target) return '';
             
             let text = target.innerText.trim();
-            
-            // Smart Phone Detection: check multiple attributes if text is masked
+
+            // Phone attribute check: look on target AND its closest parent
+            // batdongsan sets mobile="..." on outer span, not the inner span
+            const phoneAttrs = ['mobile', 'data-phone', 'data-mobile', 'at-phone', 'data-at-phone'];
+            const attrHolder = target.closest('[mobile],[data-phone],[data-mobile]') || target;
+            for (const attr of phoneAttrs) {
+              const val = attrHolder.getAttribute(attr);
+              if (val && !val.includes('*') && /\d{9,11}/.test(val.replace(/\s/g, ''))) return val.trim();
+            }
+
+            // Fallback: still masked, check target's own attrs
             if (text.includes('***')) {
-              // Removed 'raw' because it often contains encrypted garbage (not phone)
-              const attrs = ['mobile', 'data-phone', 'data-mobile', 'at-phone', 'data-at-phone'];
-              for (const attr of attrs) {
+              for (const attr of phoneAttrs) {
                 const val = target.getAttribute(attr);
                 if (val && !val.includes('*')) return val.trim();
               }
@@ -243,16 +263,15 @@ class CrawlService {
   async getDOMSnippet(url) {
     let browser;
     try {
-      browser = await puppeteer.launch({
-        headless: 'new',
+      const launch = await getBrowserLaunch();
+      browser = await launch({
+        headless: true,
+        humanize: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
 
       const page = await browser.newPage();
       await page.setViewport({ width: 1280, height: 1000 });
-      await page.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
-      );
 
       console.log(`Getting DOM snippet from: ${url}`);
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
