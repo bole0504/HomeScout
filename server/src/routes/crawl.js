@@ -3,10 +3,13 @@ const router = express.Router();
 const CrawlConfig = require('../models/CrawlConfig');
 const CrawlLog = require('../models/CrawlLog');
 const CrawlService = require('../services/CrawlService');
+const FBCrawlService = require('../services/FBCrawlService');
 const AIService = require('../services/AIService');
 const DataValidator = require('../services/DataValidator');
 const Deduplicator = require('../services/Deduplicator');
 const SchedulerService = require('../services/SchedulerService');
+const Property = require('../models/Property');
+const FBTextParser = require('../utils/FBTextParser');
 const { auth } = require('../middleware/auth');
 const { admin } = require('../middleware/admin');
 
@@ -271,6 +274,69 @@ router.post('/ai-suggest', auth, admin, async (req, res) => {
       error: error.message,
     });
   }
+});
+
+// =================== Facebook Group Import ===================
+
+/**
+ * @desc    Crawl a FB group and return parsed previews (no save)
+ * @route   POST /api/crawl/fb-group/preview
+ * @access  Private/Admin
+ */
+router.post('/fb-group/preview', auth, admin, async (req, res) => {
+  const { groupUrl, limit = 10 } = req.body;
+  if (!groupUrl || !groupUrl.includes('facebook.com')) {
+    return res.status(400).json({ message: 'Cần cung cấp URL Facebook Group hợp lệ' });
+  }
+
+  try {
+    const rawPosts = await FBCrawlService.crawlGroup(groupUrl, limit);
+    const parsed = rawPosts
+      .map(p => FBTextParser.parse(p.text, p.images, p.postUrl))
+      .filter(Boolean);
+
+    res.json({ success: true, count: parsed.length, data: parsed });
+  } catch (error) {
+    console.error('[FB Preview] Error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * @desc    Save selected FB posts as properties
+ * @route   POST /api/crawl/fb-group/save
+ * @access  Private/Admin
+ */
+router.post('/fb-group/save', auth, admin, async (req, res) => {
+  const { items } = req.body; // array of parsed + possibly edited property objects
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ message: 'Không có dữ liệu để lưu' });
+  }
+
+  const stats = { inserted: 0, skipped: 0, failed: 0 };
+  const errors = [];
+
+  for (const item of items) {
+    try {
+      const validation = DataValidator.validate(item);
+      if (!validation.isValid) {
+        stats.failed++;
+        errors.push({ title: item.title, reason: validation.errors.join(', ') });
+        continue;
+      }
+
+      const isDup = await Deduplicator.isDuplicate(item);
+      if (isDup) { stats.skipped++; continue; }
+
+      await Property.create({ ...item, source: 'facebook' });
+      stats.inserted++;
+    } catch (err) {
+      stats.failed++;
+      errors.push({ title: item.title, reason: err.message });
+    }
+  }
+
+  res.json({ success: true, stats, errors });
 });
 
 module.exports = router;

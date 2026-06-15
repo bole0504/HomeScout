@@ -149,27 +149,47 @@ Mỗi Sprint/Phase sẽ:
 
 ---
 
-## Phase 5: Scheduler & Auto Crawl ⏰
+## Phase 5: Facebook Manual Import 📋
+**Goal**: Admin paste Facebook post content → parse thành property  
+**Sessions**: 1  
+
+### Deliverables
+- [ ] Facebook content parser:
+  - Input: raw text hoặc HTML copy từ FB
+  - Extract: address, price, area, phone, images
+  - Use regex + NLP patterns cho Vietnamese BĐS posts
+- [ ] API endpoint: POST `/api/crawl/import-facebook`
+- [ ] Client: Facebook import form trong admin
+- [ ] Preview + edit trước khi save
+
+### Acceptance Criteria
+- Paste nội dung post FB → parse ra được address, price, area
+- Admin review + chỉnh sửa trước khi save
+- Data saved đúng vào Property collection
+
+---
+
+## Phase 6: Scheduler & Auto Crawl ⏰
 **Goal**: Tự động crawl theo schedule + on-demand trigger  
 **Sessions**: 1  
 
 ### Deliverables
-- [ ] Scheduler service (node-cron, mỗi 15 phút)
-- [ ] Crawl all active configs sequentially
-- [ ] Logging: crawl results, errors, duration
-- [ ] API: trigger single config / trigger all
-- [ ] Client: ConfigListPage — bảng configs + actions (edit, delete, toggle, trigger)
-- [ ] Crawl status/history hiển thị trên admin
+- [x] Scheduler service (node-cron, per-config interval)
+- [x] Crawl all active configs sequentially
+- [x] Logging: crawl results, errors, duration (CrawlLog model + TTL)
+- [x] API: trigger single config / trigger all / scheduler status / logs
+- [x] Client: ConfigListPage — bảng configs + actions (edit, delete, toggle, trigger, run-all)
+- [x] Crawl status/history hiển thị trên admin (Drawer per config)
 
 ### Acceptance Criteria
-- Scheduler chạy tự động mỗi 15 phút
-- Trigger on-demand qua admin UI hoạt động
-- Config list hiển thị last crawled time + total crawled
-- Error logging khi crawl fail
+- [x] Scheduler chạy tự động theo interval của từng config
+- [x] Trigger on-demand qua admin UI hoạt động
+- [x] Config list hiển thị last crawled time + total crawled + interval + last error
+- [x] Error logging khi crawl fail
 
 ---
 
-## Phase 6: Good Price Detection 💰
+## Phase 7: Good Price Detection 💰
 **Goal**: Phát hiện BĐS giá hời  
 **Sessions**: 1  
 **Ref**: [property-valuation-data.md](./property-valuation-data.md) — Hệ số điều chỉnh giá sections
@@ -196,26 +216,6 @@ Mỗi Sprint/Phase sẽ:
 - Badge hiển thị đúng % chênh lệch
 - Recalculate daily hoạt động
 - Khu vực < 3 properties → không tính goodPrice (insufficient data)
-
----
-
-## Phase 7: Facebook Manual Import 📋
-**Goal**: Admin paste Facebook post content → parse thành property  
-**Sessions**: 1  
-
-### Deliverables
-- [ ] Facebook content parser:
-  - Input: raw text hoặc HTML copy từ FB
-  - Extract: address, price, area, phone, images
-  - Use regex + NLP patterns cho Vietnamese BĐS posts
-- [ ] API endpoint: POST `/api/crawl/import-facebook`
-- [ ] Client: Facebook import form trong admin
-- [ ] Preview + edit trước khi save
-
-### Acceptance Criteria
-- Paste nội dung post FB → parse ra được address, price, area
-- Admin review + chỉnh sửa trước khi save
-- Data saved đúng vào Property collection
 
 ---
 
@@ -261,9 +261,9 @@ Mỗi Sprint/Phase sẽ:
 | 2 | Property Data & UI | 1 | Phase 1 |
 | 3 | Bookmark System | 1 | Phase 2 |
 | 4 | Crawl Engine & DOM Learner | 2-3 | Phase 2 |
-| 5 | Scheduler & Auto Crawl | 1 | Phase 4 |
-| 6 | Good Price Detection | 1 | Phase 4 |
-| 7 | Facebook Import | 1 | Phase 4 |
+| 5 | Facebook Import | 1 | Phase 4 |
+| 6 | Scheduler & Auto Crawl | 1 | Phase 4 |
+| 7 | Good Price Detection | 1 | Phase 4 |
 | 8 | Polish & Deploy | 1-2 | All |
 
 **Tổng ước tính: 10-12 sessions**

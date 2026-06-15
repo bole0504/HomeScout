@@ -72,8 +72,10 @@ export const crawlAPI = {
   createConfig: (data) => api.post('/crawl/configs', data),
   updateConfig: (id, data) => api.patch(`/crawl/configs/${id}`, data),
   deleteConfig: (id) => api.delete(`/crawl/configs/${id}`),
-  trigger: (id) => api.post(`/crawl/trigger/${id}`),
-  triggerAll: () => api.post('/crawl/trigger-all'),
+  runConfig: (id) => api.post(`/crawl/configs/${id}/run`),
+  runAll: () => api.post('/crawl/run-all'),
+  getLogs: (configId, params) => api.get(`/crawl/logs/${configId}`, { params }),
+  getSchedulerStatus: () => api.get('/crawl/scheduler/status'),
   aiSuggest: (url) => api.post('/crawl/ai-suggest', { url }),
 };
 

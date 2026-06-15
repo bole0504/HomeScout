@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Layout, Menu, Button, Dropdown, Avatar, theme, Typography } from 'antd';
-import { 
-  DashboardOutlined, 
-  TeamOutlined, 
+import {
+  DashboardOutlined,
+  TeamOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   SettingOutlined,
-  DatabaseOutlined
+  DatabaseOutlined,
+  FacebookOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -40,13 +41,18 @@ const AdminLayout = () => {
         key: '/admin/users',
         icon: <TeamOutlined />,
         label: 'Quản lý Người dùng',
-      }
-    ] : []),
+      },
       {
         key: '/admin/crawl',
         icon: <SettingOutlined />,
         label: 'Cấu hình Crawl',
       },
+      {
+        key: '/admin/fb-import',
+        icon: <FacebookOutlined style={{ color: '#1877f2' }} />,
+        label: 'Import Facebook',
+      },
+    ] : []),
   ];
 
   const userMenuItems = [
