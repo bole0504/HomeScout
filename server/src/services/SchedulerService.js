@@ -2,6 +2,8 @@ const cron = require('node-cron');
 const CrawlConfig = require('../models/CrawlConfig');
 const CrawlLog = require('../models/CrawlLog');
 const CrawlService = require('./CrawlService');
+const FBCrawlService = require('./FBCrawlService');
+const FBTextParser = require('../utils/FBTextParser');
 const DataValidator = require('./DataValidator');
 const Deduplicator = require('./Deduplicator');
 
@@ -124,25 +126,52 @@ class SchedulerService {
     let status = 'success';
 
     try {
-      const rawItems = await CrawlService.testCrawl(config.url, config.selectors);
-      stats.totalScraped = rawItems.length;
+      let rawItems = [];
 
-      // Process sequentially
-      for (const rawItem of rawItems) {
-        try {
-          const validated = DataValidator.validate(rawItem);
-          if (!validated) {
+      if (config.sourceType === 'facebook') {
+        // ── Facebook Group crawl ──────────────────────────────────────────────
+        const limit = config.pagination?.maxPages
+          ? config.pagination.maxPages * 10
+          : 20;
+        const rawPosts = await FBCrawlService.crawlGroup(config.url, limit);
+        stats.totalScraped = rawPosts.length;
+
+        for (const post of rawPosts) {
+          try {
+            const parsed = FBTextParser.parse(post.text, post.images, post.postUrl);
+            if (!parsed) { stats.totalFailed++; continue; }
+
+            // Map FBTextParser output → Property schema
+            const normalized = this._normalizeFbItem(parsed, config._id);
+            if (!normalized) { stats.totalFailed++; continue; }
+
+            const result = await Deduplicator.upsert(normalized, config._id);
+            if (result.action === 'inserted') stats.totalInserted++;
+            else if (result.action === 'updated') stats.totalUpdated++;
+            else if (result.action === 'skipped') stats.totalSkipped++;
+          } catch (itemErr) {
+            console.error(`[Scheduler] FB item error in "${config.name}":`, itemErr.message);
             stats.totalFailed++;
-            continue;
           }
+        }
+      } else {
+        // ── Website crawl ─────────────────────────────────────────────────────
+        rawItems = await CrawlService.fullCrawl(config.url, config.selectors, config.pagination);
+        stats.totalScraped = rawItems.length;
 
-          const result = await Deduplicator.upsert(validated, config._id);
-          if (result.action === 'inserted') stats.totalInserted++;
-          else if (result.action === 'updated') stats.totalUpdated++;
-          else if (result.action === 'skipped') stats.totalSkipped++;
-        } catch (itemErr) {
-          console.error(`[Scheduler] Item error in "${config.name}":`, itemErr.message);
-          stats.totalFailed++;
+        for (const rawItem of rawItems) {
+          try {
+            const validated = DataValidator.validate(rawItem);
+            if (!validated) { stats.totalFailed++; continue; }
+
+            const result = await Deduplicator.upsert(validated, config._id);
+            if (result.action === 'inserted') stats.totalInserted++;
+            else if (result.action === 'updated') stats.totalUpdated++;
+            else if (result.action === 'skipped') stats.totalSkipped++;
+          } catch (itemErr) {
+            console.error(`[Scheduler] Item error in "${config.name}":`, itemErr.message);
+            stats.totalFailed++;
+          }
         }
       }
 
@@ -226,6 +255,58 @@ class SchedulerService {
     } catch (err) {
       console.error('[Scheduler] syncConfig error:', err.message);
     }
+  }
+
+  /**
+   * Map FBTextParser output → Property schema fields.
+   * Returns null if minimum required fields are missing.
+   */
+  _normalizeFbItem(parsed, configId) {
+    const province = (parsed.address?.city || '').trim();
+    const district = (parsed.address?.district || '').trim();
+
+    // province + district are required by the Property model
+    if (!province || !district) return null;
+
+    // rawPrice is in VND; Property.totalPrice is in triệu (millions)
+    const totalPrice = parsed.rawPrice ? Math.round(parsed.rawPrice / 1000000) : undefined;
+    const pricePerM2 = parsed.rawPricePerM2 ? Math.round(parsed.rawPricePerM2 / 1000000) : undefined;
+
+    return {
+      title: parsed.title,
+      transactionType: parsed.transactionType,
+      propertyType: parsed.propertyType,
+      address: {
+        province,
+        district,
+        ward: parsed.address?.ward || '',
+        street: parsed.address?.street || '',
+        fullAddress: parsed.address?.fullAddress || '',
+      },
+      totalPrice,
+      pricePerM2,
+      area: parsed.rawArea || undefined,
+      phone: parsed.phone || '',
+      description: parsed.description || '',
+      images: parsed.images || [],
+      sourceUrl: parsed.sourceUrl || '',
+      source: 'facebook',
+      crawlConfigId: configId,
+      building: {
+        floors: parsed.floors || undefined,
+        bedrooms: parsed.bedrooms || undefined,
+        wc: parsed.wc || undefined,
+      },
+      legal: {
+        titleDeed: parsed.legal || undefined,
+      },
+      land: {
+        direction: parsed.direction
+          ? parsed.direction.charAt(0).toUpperCase() + parsed.direction.slice(1)
+          : undefined,
+        actualArea: parsed.rawArea || undefined,
+      },
+    };
   }
 
   /**

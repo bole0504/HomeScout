@@ -71,7 +71,7 @@ const PropertyCard = ({ property }) => {
           {legal?.titleDeed && <Tag color="blue">{legal.titleDeed}</Tag>}
           {legal?.ownerType === 'chính chủ' && <Tag color="geekblue">Chính chủ</Tag>}
           <Tag icon={<CheckCircleOutlined />} color={dataCompletenessScore > 80 ? "green" : "gold"}>
-            Độ tin cậy: {dataCompletenessScore || 0}%
+            Score: {dataCompletenessScore || 0}
           </Tag>
         </Space>
       </div>

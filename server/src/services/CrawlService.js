@@ -1,6 +1,10 @@
+const path = require('path');
+const fs = require('fs');
 const nlpProcessor = require('../utils/nlpProcessor');
 const addressParser = require('../utils/location/AddressParser');
 const dataNormalizer = require('../utils/DataNormalizer');
+
+const COOKIE_DIR = path.join(__dirname, '../../.crawl-cookies');
 
 // CloakBrowser is ESM-only — load once and cache
 let _launch = null;
@@ -10,6 +14,26 @@ async function getBrowserLaunch() {
     _launch = mod.launch;
   }
   return _launch;
+}
+
+function cookiePath(url) {
+  const host = new URL(url).hostname.replace(/\./g, '_');
+  return path.join(COOKIE_DIR, `${host}.json`);
+}
+
+function loadCookies(url) {
+  try {
+    const p = cookiePath(url);
+    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch {}
+  return [];
+}
+
+function saveCookies(url, cookies) {
+  try {
+    if (!fs.existsSync(COOKIE_DIR)) fs.mkdirSync(COOKIE_DIR, { recursive: true });
+    fs.writeFileSync(cookiePath(url), JSON.stringify(cookies, null, 2));
+  } catch {}
 }
 
 class CrawlService {
@@ -28,231 +52,242 @@ class CrawlService {
         humanize: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
-
       const page = await browser.newPage();
       await page.setViewport({ width: 1280, height: 800 });
-
-      console.log(`Navigating to: ${url}`);
+      console.log(`[testCrawl] Navigating to: ${url}`);
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-
-      // 1. Smart Scroll Phase: Scroll and wait for lazy loads
       await page.evaluate(async () => {
-        await new Promise((resolve) => {
-          let totalHeight = 0;
-          let distance = 100;
-          let timer = setInterval(() => {
-            let scrollHeight = document.body.scrollHeight;
-            window.scrollBy(0, distance);
-            totalHeight += distance;
-
-            if (totalHeight >= scrollHeight || totalHeight > 5000) { 
-              clearInterval(timer);
-              resolve();
-            }
+        await new Promise(resolve => {
+          let total = 0;
+          const timer = setInterval(() => {
+            window.scrollBy(0, 100);
+            total += 100;
+            if (total >= Math.min(document.body.scrollHeight, 5000)) { clearInterval(timer); resolve(); }
           }, 100);
         });
       });
       await new Promise(r => setTimeout(r, 1000));
-
-      // NEW: Robust Handle reveal phone click
-      if (selectors.fields?.revealPhoneSelector) {
-        console.log(`[RevealPhone] Using selector: ${selectors.fields.revealPhoneSelector}`);
-        try {
-          // Remove potential overlays like cookie banners or popups that might block clicks
-          await page.evaluate(() => {
-            const overlays = [
-              '.re__contact-box-v2', // some floating boxes
-              '#divAdLeft', '#divAdRight', // side ads
-              '.ad-banner', '.cookie-banner'
-            ];
-            overlays.forEach(sel => {
-              const el = document.querySelector(sel);
-              if (el) el.remove();
-            });
-          });
-
-          const revealButtons = await page.$$(selectors.fields.revealPhoneSelector);
-          console.log(`[RevealPhone] Found ${revealButtons.length} buttons.`);
-
-          for (let i = 0; i < revealButtons.length; i++) {
-            try {
-              const rect = await revealButtons[i].boundingBox();
-              if (rect) {
-                await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2, { delay: 50 });
-              } else {
-                await revealButtons[i].click({ delay: 50 }).catch(() => {});
-              }
-              // Wait between clicks to avoid rate limiting
-              await new Promise(r => setTimeout(r, 300));
-            } catch (clickErr) {
-              console.warn(`[RevealPhone] Click error at item ${i + 1}`);
-            }
-          }
-
-          // Wait for DOM to update: poll until no *** remain, max 5s
-          try {
-            await page.waitForFunction(
-              (sel) => {
-                const btns = document.querySelectorAll(sel);
-                return Array.from(btns).every(btn => !btn.innerText.includes('***'));
-              },
-              { timeout: 5000 },
-              selectors.fields.revealPhoneSelector
-            );
-            console.log('[RevealPhone] All phones revealed.');
-          } catch {
-            console.warn('[RevealPhone] Timeout waiting for reveal — some phones may still be masked.');
-          }
-        } catch (e) {
-          console.log('[RevealPhone] Critical error:', e.message);
-        }
-      }
-
-      const results = await page.evaluate((sel) => {
-        const items = [];
-        const container = sel.listContainer ? document.querySelector(sel.listContainer) : document.body;
-        
-        if (!container) return [];
-
-        const elementNodes = container.querySelectorAll(sel.itemSelector);
-        
-        // Take top 20 for preview
-        const limit = Math.min(elementNodes.length, 20);
-        
-        for (let i = 0; i < limit; i++) {
-          const el = elementNodes[i];
-          const item = {};
-          
-          // Helper to extract text from a selector relative to the item
-          const extractText = (selector) => {
-            if (!selector) return '';
-            const target = el.querySelector(selector);
-            if (!target) return '';
-            
-            let text = target.innerText.trim();
-
-            // Phone attribute check: look on target AND its closest parent
-            // batdongsan sets mobile="..." on outer span, not the inner span
-            const phoneAttrs = ['mobile', 'data-phone', 'data-mobile', 'at-phone', 'data-at-phone'];
-            const attrHolder = target.closest('[mobile],[data-phone],[data-mobile]') || target;
-            for (const attr of phoneAttrs) {
-              const val = attrHolder.getAttribute(attr);
-              if (val && !val.includes('*') && /\d{9,11}/.test(val.replace(/\s/g, ''))) return val.trim();
-            }
-
-            // Fallback: still masked, check target's own attrs
-            if (text.includes('***')) {
-              for (const attr of phoneAttrs) {
-                const val = target.getAttribute(attr);
-                if (val && !val.includes('*')) return val.trim();
-              }
-            }
-
-            // 2. If text is a relative date (e.g. "Hôm nay", "3 ngày trước"), 
-            // try to get precise date from aria-label or title
-            if (text.length < 15 && (text.includes('nay') || text.includes('qua') || text.includes('trước'))) {
-                const preciseDate = target.getAttribute('aria-label') || 
-                                    target.getAttribute('title') || 
-                                    target.getAttribute('data-microtip-label');
-                if (preciseDate) return preciseDate;
-            }
-            
-            return text;
-          };
-
-          // Helper to extract attribute (like href)
-          const extractAttr = (selector, attr) => {
-            if (!selector) return '';
-            const target = el.querySelector(selector);
-            return target ? target.getAttribute(attr) : '';
-          };
-
-          // Helper to extract multiple images
-          const extractImages = (selector) => {
-            if (!selector) return [];
-            const imgNodes = el.querySelectorAll(selector);
-            return Array.from(imgNodes).map(img => img.src || img.getAttribute('data-src') || img.getAttribute('src')).filter(src => !!src);
-          };
-
-          const fieldSelectors = sel.fields || {};
-          item.title = extractText(fieldSelectors.title);
-          item.address = extractText(fieldSelectors.address);
-          item.publishedDate = extractText(fieldSelectors.publishedDate);
-          
-          item.price = extractText(fieldSelectors.price);
-          item.pricePerM2 = extractText(fieldSelectors.pricePerM2);
-          item.area = extractText(fieldSelectors.area);
-          item.bedrooms = extractText(fieldSelectors.bedrooms);
-          item.wc = extractText(fieldSelectors.wc);
-          item.legal = extractText(fieldSelectors.legal);
-          
-          item.phone = extractText(fieldSelectors.phone);
-          item.description = extractText(fieldSelectors.description);
-          item.images = extractImages(fieldSelectors.images);
-          item.detailLink = extractAttr(fieldSelectors.detailLink || 'a', 'href');
-          
-          // Handle relative links
-          if (item.detailLink && item.detailLink.startsWith('/')) {
-            const baseUrl = window.location.origin;
-            item.detailLink = baseUrl + item.detailLink;
-          }
-
-          items.push(item);
-        }
-        
-        return items;
-      }, selectors);
-
-      // Enrich data with NLP (outside of page.evaluate to keep it clean)
-      const enrichedResults = results.map(item => {
-        // 1. NLP from description
-        const nlpData = nlpProcessor.extractFromDescription(item.description);
-        
-        // 2. Hierarchical Address Analysis (New & Robust)
-        // Try parsing from multiple sources in order of reliability
-        const textToSearch = `${item.address} ${item.title} ${item.description}`;
-        const parsedLocation = addressParser.parse(textToSearch);
-
-        const finalAddress = {
-          city: item.city || parsedLocation.city || '',
-          district: item.district || parsedLocation.district || '',
-          ward: item.ward || parsedLocation.ward || '',
-          street: item.street || parsedLocation.street || '',
-          fullAddress: parsedLocation.fullAddress || item.address || item.title
-        };
-
-        const cleanPhone = nlpProcessor.cleanPhone(item.phone);
-        const parsedDate = nlpProcessor.parseRelativeDate(item.publishedDate);
-        const formattedDate = parsedDate ? parsedDate.toISOString().split('T')[0] : item.publishedDate;
-
-        // Normalize numeric values (Price, Area)
-        const rawPrice = dataNormalizer.parsePrice(item.price);
-        const rawArea = dataNormalizer.parseArea(item.area || nlpData.area);
-        const rawPricePerM2 = dataNormalizer.parsePricePerM2(item.pricePerM2) || 
-                              (rawPrice && rawArea ? Math.round(rawPrice / rawArea) : null);
-
-        return { 
-          ...item, 
-          ...nlpData, 
-          address: finalAddress,
-          phone: cleanPhone,
-          legal: item.legal || nlpData.legal || '',
-          publishedDate: formattedDate,
-          rawPrice,
-          rawArea,
-          rawPricePerM2
-        };
-      });
-
-      return enrichedResults;
+      // Preview: cap at 20 items
+      return this._extractPage(page, selectors, 20);
     } catch (error) {
-      console.error('Crawl Error:', error);
+      console.error('[testCrawl] Error:', error.message);
       throw error;
     } finally {
-      if (browser) {
-        await browser.close();
-      }
+      if (browser) await browser.close();
     }
+  }
+
+  /**
+   * Extract items from a single already-loaded page.
+   * Reused by both testCrawl and fullCrawl.
+   */
+  async _extractPage(page, selectors, limit = 9999) {
+    if (selectors.fields?.revealPhoneSelector) {
+      try {
+        await page.evaluate(() => {
+          ['.re__contact-box-v2', '#divAdLeft', '#divAdRight', '.ad-banner', '.cookie-banner']
+            .forEach(sel => { const el = document.querySelector(sel); if (el) el.remove(); });
+        });
+        const btns = await page.$$(selectors.fields.revealPhoneSelector);
+        for (const btn of btns) {
+          try {
+            const rect = await btn.boundingBox();
+            if (rect) await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2, { delay: 50 });
+            else await btn.click({ delay: 50 }).catch(() => {});
+            await new Promise(r => setTimeout(r, 300));
+          } catch {}
+        }
+        await page.waitForFunction(
+          (sel) => Array.from(document.querySelectorAll(sel)).every(b => !b.innerText.includes('***')),
+          { timeout: 5000 }, selectors.fields.revealPhoneSelector
+        ).catch(() => {});
+      } catch {}
+    }
+
+    // Wait for any pending navigation (redirects) to settle before evaluating
+    await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 }).catch(() => {});
+
+    let raw = [];
+    try {
+      raw = await page.evaluate((sel, lim) => {
+      const container = sel.listContainer ? document.querySelector(sel.listContainer) : document.body;
+      if (!container) return [];
+      const nodes = Array.from(container.querySelectorAll(sel.itemSelector)).slice(0, lim);
+
+      const extractText = (el, selector) => {
+        if (!selector) return '';
+        const target = el.querySelector(selector);
+        if (!target) return '';
+        const phoneAttrs = ['mobile', 'data-phone', 'data-mobile', 'at-phone'];
+        const holder = target.closest('[mobile],[data-phone],[data-mobile]') || target;
+        for (const a of phoneAttrs) {
+          const v = holder.getAttribute(a);
+          if (v && !v.includes('*') && /\d{9,11}/.test(v.replace(/\s/g, ''))) return v.trim();
+        }
+        const text = target.innerText?.trim() || '';
+        if (text.includes('***')) {
+          for (const a of phoneAttrs) { const v = target.getAttribute(a); if (v && !v.includes('*')) return v.trim(); }
+        }
+        if (text.length < 15 && /nay|qua|trước/.test(text)) {
+          return target.getAttribute('aria-label') || target.getAttribute('title') || text;
+        }
+        return text;
+      };
+      const extractAttr = (el, selector, attr) => {
+        if (!selector) return '';
+        const t = el.querySelector(selector);
+        return t ? (t.getAttribute(attr) || '') : '';
+      };
+      const extractImages = (el, selector) => {
+        if (!selector) return [];
+        return Array.from(el.querySelectorAll(selector))
+          .map(img => img.src || img.getAttribute('data-src') || '')
+          .filter(Boolean);
+      };
+
+      return nodes.map(el => {
+        const f = sel.fields || {};
+        const detailLink = (() => {
+          const href = extractAttr(el, f.detailLink || 'a', 'href');
+          if (href && href.startsWith('/')) return window.location.origin + href;
+          return href;
+        })();
+        return {
+          title: extractText(el, f.title),
+          address: extractText(el, f.address),
+          city: extractText(el, f.city),
+          district: extractText(el, f.district),
+          ward: extractText(el, f.ward),
+          street: extractText(el, f.street),
+          publishedDate: extractText(el, f.publishedDate),
+          price: extractText(el, f.price),
+          pricePerM2: extractText(el, f.pricePerM2),
+          area: extractText(el, f.area),
+          bedrooms: extractText(el, f.bedrooms),
+          wc: extractText(el, f.wc),
+          legal: extractText(el, f.legal),
+          phone: extractText(el, f.phone),
+          description: extractText(el, f.description),
+          images: extractImages(el, f.images),
+          detailLink,
+        };
+      });
+    }, selectors, limit);
+    } catch (evalErr) {
+      console.error('[CrawlService] page.evaluate failed (context destroyed or timeout):', evalErr.message);
+      return [];
+    }
+
+    return raw.map(item => {
+      const nlpData = nlpProcessor.extractFromDescription(item.description);
+      const textToSearch = `${item.address} ${item.city} ${item.district} ${item.title} ${item.description}`;
+      const parsedLocation = addressParser.parse(textToSearch);
+      return {
+        ...item,
+        ...nlpData,
+        address: {
+          city:        item.city        || parsedLocation.city        || '',
+          district:    item.district    || parsedLocation.district    || '',
+          ward:        item.ward        || parsedLocation.ward        || '',
+          street:      item.street      || parsedLocation.street      || '',
+          fullAddress: parsedLocation.fullAddress || item.address     || '',
+        },
+        phone: nlpProcessor.cleanPhone(item.phone),
+        legal: item.legal || nlpData.legal || '',
+        publishedDate: (() => {
+          const d = nlpProcessor.parseRelativeDate(item.publishedDate);
+          return d ? d.toISOString().split('T')[0] : item.publishedDate;
+        })(),
+        rawPrice:      dataNormalizer.parsePrice(item.price),
+        rawArea:       dataNormalizer.parseArea(item.area || nlpData.area),
+        rawPricePerM2: dataNormalizer.parsePricePerM2(item.pricePerM2) || null,
+      };
+    });
+  }
+
+  /**
+   * Production crawl — respects pagination, uses cookie persistence.
+   * Used by SchedulerService for auto and on-demand runs.
+   */
+  async fullCrawl(url, selectors, pagination = {}) {
+    const maxPages = pagination?.maxPages || 5;
+    const paramName = pagination?.paramName || 'page';
+    const allItems = [];
+    let browser;
+
+    try {
+      const launch = await getBrowserLaunch();
+      browser = await launch({
+        headless: true,
+        humanize: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1280, height: 800 });
+
+      // Load saved cookies to appear as a returning visitor
+      const savedCookies = loadCookies(url);
+      if (savedCookies.length) {
+        await page.setCookie(...savedCookies);
+        console.log(`[CrawlService] Loaded ${savedCookies.length} saved cookies for ${new URL(url).hostname}`);
+      }
+
+      for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+        const pageUrl = pageNum === 1
+          ? url
+          : `${url}${url.includes('?') ? '&' : '?'}${paramName}=${pageNum}`;
+
+        console.log(`[CrawlService] Crawling page ${pageNum}/${maxPages}: ${pageUrl}`);
+
+        try {
+          await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+
+          // Scroll to trigger lazy loads
+          await page.evaluate(async () => {
+            await new Promise(resolve => {
+              let total = 0;
+              const timer = setInterval(() => {
+                window.scrollBy(0, 200);
+                total += 200;
+                if (total >= Math.min(document.body.scrollHeight, 5000)) { clearInterval(timer); resolve(); }
+              }, 80);
+            });
+          });
+          await new Promise(r => setTimeout(r, 800));
+
+          const items = await this._extractPage(page, selectors);
+
+          if (items.length === 0) {
+            console.log(`[CrawlService] No items on page ${pageNum}, stopping pagination.`);
+            break;
+          }
+
+          allItems.push(...items);
+          console.log(`[CrawlService] Page ${pageNum}: ${items.length} items (total: ${allItems.length})`);
+
+          // Random delay between pages (1–3s) to avoid rate limiting
+          if (pageNum < maxPages) {
+            await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000));
+          }
+        } catch (pageErr) {
+          console.error(`[CrawlService] Page ${pageNum} failed: ${pageErr.message}`);
+          break;
+        }
+      }
+
+      // Save cookies after successful crawl
+      const cookies = await page.cookies();
+      if (cookies.length) saveCookies(url, cookies);
+
+    } catch (error) {
+      console.error('[CrawlService] fullCrawl error:', error.message);
+      throw error;
+    } finally {
+      if (browser) await browser.close();
+    }
+
+    return allItems;
   }
 
   /**

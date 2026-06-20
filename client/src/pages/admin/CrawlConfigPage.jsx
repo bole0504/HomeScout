@@ -23,6 +23,9 @@ import {
   PlayCircleOutlined,
   HistoryOutlined,
   ThunderboltOutlined,
+  GlobalOutlined,
+  FacebookOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 import { crawlAPI } from '../../api';
 import CrawlConfigForm from '../../components/admin/CrawlConfigForm';
@@ -162,7 +165,12 @@ const CrawlConfigPage = () => {
       key: 'name',
       render: (text, record) => (
         <Space direction="vertical" size={0}>
-          <Text strong>{text}</Text>
+          <Space size={6}>
+            {record.sourceType === 'facebook'
+              ? <FacebookOutlined style={{ color: '#1877f2' }} />
+              : <GlobalOutlined style={{ color: '#52c41a' }} />}
+            <Text strong>{text}</Text>
+          </Space>
           <Text type="secondary" style={{ fontSize: 12 }}>{record.url}</Text>
         </Space>
       ),
@@ -225,6 +233,15 @@ const CrawlConfigPage = () => {
       align: 'center',
       render: (_, record) => (
         <Space size="small">
+          <Tooltip title="Mở link gốc">
+            <Button
+              size="small"
+              icon={<LinkOutlined />}
+              href={record.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            />
+          </Tooltip>
           <Tooltip title="Chạy ngay">
             <Button
               type="primary"

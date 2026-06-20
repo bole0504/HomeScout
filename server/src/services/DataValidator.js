@@ -19,47 +19,42 @@ class DataValidator {
     // 2. Details link is required
     const sourceUrl = rawItem.detailLink ? rawItem.detailLink.trim() : '';
     if (!sourceUrl) {
-      console.warn('[Validator] Rejected: Missing detailLink');
+      console.warn(`[Validator] Rejected "${title.slice(0, 40)}": Missing detailLink`);
       return null;
     }
 
     // 3. Address city/province and district are required
     const rawAddress = rawItem.address || {};
-    const province = (rawAddress.city || '').trim();
+    const province = (rawAddress.city || rawAddress.province || '').trim();
     const district = (rawAddress.district || '').trim();
     if (!province || !district) {
-      console.warn(`[Validator] Rejected: Missing address details (province: "${province}", district: "${district}")`);
+      console.warn(`[Validator] Rejected "${title.slice(0, 40)}": Missing address (province: "${province}", district: "${district}")`);
       return null;
     }
 
     // 4. Area is required
     const area = rawItem.rawArea || null;
     if (!area || area <= 0) {
-      console.warn('[Validator] Rejected: Missing or invalid area');
+      console.warn(`[Validator] Rejected "${title.slice(0, 40)}": Missing or invalid area`);
       return null;
     }
 
     // 5. Price Normalization (Target schema is in Million VNĐ)
+    // Price is optional — listings with "Thỏa thuận" or missing price still get saved
     let totalPrice = null;
     let pricePerM2 = null;
 
     if (rawItem.rawPrice) {
-      totalPrice = rawItem.rawPrice / 1000000; // Convert full VND to million VND
+      totalPrice = rawItem.rawPrice / 1000000;
     }
     if (rawItem.rawPricePerM2) {
-      pricePerM2 = rawItem.rawPricePerM2 / 1000000; // Convert full VND to million VND
+      pricePerM2 = rawItem.rawPricePerM2 / 1000000;
     }
 
-    // Calculate missing values if possible
-    if (!totalPrice && pricePerM2) {
+    if (!totalPrice && pricePerM2 && area) {
       totalPrice = pricePerM2 * area;
-    } else if (totalPrice && !pricePerM2) {
+    } else if (totalPrice && !pricePerM2 && area) {
       pricePerM2 = totalPrice / area;
-    }
-
-    if (!totalPrice || totalPrice <= 0) {
-      console.warn('[Validator] Rejected: Missing or invalid price');
-      return null;
     }
 
     // 6. Basic flat attributes cleanups

@@ -4,15 +4,16 @@ import {
   Row, Col, Card, Typography, Space, Tag, Button, 
   Carousel, Divider, Input, message, Spin, Empty 
 } from 'antd';
-import { 
-  EnvironmentOutlined, 
-  HomeOutlined, 
-  CompressOutlined, 
+import {
+  EnvironmentOutlined,
+  HomeOutlined,
+  CompressOutlined,
   CheckCircleOutlined,
   ArrowLeftOutlined,
   PhoneOutlined,
   CalendarOutlined,
-  SaveOutlined
+  SaveOutlined,
+  LinkOutlined
 } from '@ant-design/icons';
 import { propertiesAPI, bookmarksAPI } from '../api';
 import BookmarkButton from '../components/properties/BookmarkButton';
@@ -102,6 +103,7 @@ const PropertyDetailsPage = () => {
     goodPrice,
     goodPricePercent,
     phone,
+    sourceUrl,
     createdAt
   } = property;
 
@@ -110,9 +112,16 @@ const PropertyDetailsPage = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)} style={{ marginBottom: 24 }}>
-        Quay lại danh sách
-      </Button>
+      <Space style={{ marginBottom: 24 }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
+          Quay lại danh sách
+        </Button>
+        {sourceUrl && (
+          <Button icon={<LinkOutlined />} href={sourceUrl} target="_blank" rel="noopener noreferrer">
+            Xem tin gốc
+          </Button>
+        )}
+      </Space>
 
       <Row gutter={[24, 24]}>
         {/* Main Column */}
@@ -154,7 +163,7 @@ const PropertyDetailsPage = () => {
                     </Tag>
                   )}
                   <Tag icon={<CheckCircleOutlined />} color={dataCompletenessScore > 80 ? "green" : "gold"}>
-                    Độ tin cậy: {dataCompletenessScore || 0}%
+                    Score: {dataCompletenessScore || 0}
                   </Tag>
                 </Space>
 

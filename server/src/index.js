@@ -1,4 +1,13 @@
 require('dotenv').config();
+
+// Prevent Puppeteer/browser errors from crashing the process
+process.on('unhandledRejection', (reason) => {
+  console.error('[Process] Unhandled rejection (caught):', reason?.message || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Process] Uncaught exception (caught):', err.message);
+});
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
