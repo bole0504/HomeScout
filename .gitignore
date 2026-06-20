@@ -7,3 +7,4 @@ build/
 .vscode/
 .idea/
 .fb-session.json
+CREDENTIALS.md
