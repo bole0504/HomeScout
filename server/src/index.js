@@ -21,10 +21,19 @@ const PORT = process.env.PORT || 5001;
 // --------------- Middleware ---------------
 app.use(helmet());
 app.use(morgan('dev'));
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [process.env.CLIENT_URL, /\.vercel\.app$/].filter(Boolean)
+  : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.CLIENT_URL 
-    : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'],
+  origin: (origin, cb) => {
+    // Allow server-to-server (Vercel proxy) — no Origin header
+    if (!origin) return cb(null, true);
+    const ok = allowedOrigins.some(o =>
+      typeof o === 'string' ? o === origin : o.test(origin)
+    );
+    cb(ok ? null : new Error('CORS blocked'), ok);
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));

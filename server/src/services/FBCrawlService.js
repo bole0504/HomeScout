@@ -34,12 +34,28 @@ class FBCrawlService {
     try {
       const url = page.url();
       if (url.includes('/login') || url.includes('checkpoint')) return false;
+
+      // c_user cookie presence is the most reliable indicator of FB login
+      const cookies = await page.cookies();
+      const cUser = cookies.find(c => c.name === 'c_user');
+      const xs    = cookies.find(c => c.name === 'xs');
+      if (cUser && xs) return true;
+
       return await page.evaluate(() => {
-        // Logged in = no login form present + has some user-specific element
         const hasLoginForm = !!document.querySelector('#email[type="email"], #loginform, [data-testid="royal_login_form"]');
         const hasUserNav   = !!document.querySelector('[aria-label="Account"], [data-testid="blue_bar_profile_link"], [aria-label="Your profile"]');
-        return !hasLoginForm || hasUserNav;
+        // Must have user nav AND no login form — not just one of them
+        return hasUserNav && !hasLoginForm;
       });
+    } catch { return false; }
+  }
+
+  // Check if saved session cookies contain real auth tokens
+  _sessionHasAuth() {
+    if (!fs.existsSync(SESSION_PATH)) return false;
+    try {
+      const cookies = JSON.parse(fs.readFileSync(SESSION_PATH, 'utf8'));
+      return cookies.some(c => c.name === 'c_user') && cookies.some(c => c.name === 'xs');
     } catch { return false; }
   }
 
@@ -199,8 +215,8 @@ class FBCrawlService {
   async crawlGroup(groupUrl, limit = 10) {
     const launch = await getBrowserLaunch();
 
-    // Show browser on first run so user can handle FB security challenges
-    const headless = fs.existsSync(SESSION_PATH);
+    // Only run headless if session has real auth cookies
+    const headless = this._sessionHasAuth();
     console.log(`[FB] Starting browser (headless: ${headless})...`);
 
     const browser = await launch({

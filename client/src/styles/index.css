@@ -179,3 +179,96 @@ body {
   overflow: hidden;
   white-space: nowrap;
 }
+
+/* ========================
+   Mobile Bottom Navigation
+   ======================== */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: #ffffff;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: stretch;
+  z-index: 200;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+  /* Safe area for iOS home indicator */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.mobile-bottom-nav__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  transition: color var(--transition-fast);
+  padding: 6px 4px;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-bottom-nav__item.active {
+  color: var(--color-primary);
+}
+
+.mobile-bottom-nav__icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.mobile-bottom-nav__label {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70px;
+}
+
+/* ========================
+   Mobile Filter Toggle
+   ======================== */
+.filter-mobile-wrapper {
+  margin-bottom: 12px;
+}
+
+.filter-mobile-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fafafa;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.filter-mobile-toggle__arrow {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.filter-mobile-content {
+  padding: 12px 14px;
+  background: #fafafa;
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}

@@ -276,6 +276,113 @@ router.post('/ai-suggest', auth, admin, async (req, res) => {
   }
 });
 
+// =================== Facebook Session Management ===================
+
+/**
+ * @desc    Check FB session status (are we logged in?)
+ * @route   GET /api/crawl/fb/session-status
+ * @access  Private/Admin
+ */
+router.get('/fb/session-status', auth, admin, (req, res) => {
+  const path = require('path');
+  const fs   = require('fs');
+  const SESSION_PATH = path.join(__dirname, '../../.fb-session.json');
+
+  if (!fs.existsSync(SESSION_PATH)) {
+    return res.json({ success: true, loggedIn: false, reason: 'Chưa có session file' });
+  }
+
+  try {
+    const cookies = JSON.parse(fs.readFileSync(SESSION_PATH, 'utf8'));
+    const cUser = cookies.find(c => c.name === 'c_user');
+    const xs    = cookies.find(c => c.name === 'xs');
+
+    if (cUser && xs) {
+      const expiry = xs.expires ? new Date(xs.expires * 1000).toLocaleString('vi-VN') : 'unknown';
+      return res.json({
+        success: true,
+        loggedIn: true,
+        userId: cUser.value,
+        sessionExpiry: expiry,
+        cookieCount: cookies.length,
+      });
+    }
+
+    return res.json({
+      success: true,
+      loggedIn: false,
+      reason: 'Session thiếu c_user/xs — cần import cookies từ browser',
+      cookieCount: cookies.length,
+    });
+  } catch (err) {
+    return res.json({ success: true, loggedIn: false, reason: err.message });
+  }
+});
+
+/**
+ * @desc    Import FB cookies from browser (paste from Cookie Editor extension)
+ * @route   POST /api/crawl/fb/set-session
+ * @access  Private/Admin
+ *
+ * Body: { cookies: [...] }  — array of cookie objects from Cookie Editor extension
+ *   OR  { cookieString: "c_user=xxx; xs=yyy; ..." } — raw cookie string from DevTools
+ */
+router.post('/fb/set-session', auth, admin, (req, res) => {
+  const path = require('path');
+  const fs   = require('fs');
+  const SESSION_PATH = path.join(__dirname, '../../.fb-session.json');
+
+  const { cookies, cookieString } = req.body;
+  let cookieList = [];
+
+  if (Array.isArray(cookies) && cookies.length > 0) {
+    cookieList = cookies;
+  } else if (typeof cookieString === 'string' && cookieString.trim()) {
+    // Parse "name=value; name2=value2" format (from DevTools → Application → Cookies → copy)
+    cookieList = cookieString.split(';').map(part => {
+      const [name, ...rest] = part.trim().split('=');
+      return { name: name.trim(), value: rest.join('=').trim(), domain: '.facebook.com', path: '/' };
+    }).filter(c => c.name);
+  } else {
+    return res.status(400).json({ message: 'Cần cung cấp cookies (array) hoặc cookieString' });
+  }
+
+  const cUser = cookieList.find(c => c.name === 'c_user');
+  const xs    = cookieList.find(c => c.name === 'xs');
+
+  if (!cUser || !xs) {
+    return res.status(400).json({
+      message: 'Cookies thiếu c_user hoặc xs — đây là 2 cookies bắt buộc để xác thực FB',
+      found: cookieList.map(c => c.name),
+    });
+  }
+
+  fs.writeFileSync(SESSION_PATH, JSON.stringify(cookieList, null, 2));
+  return res.json({
+    success: true,
+    message: 'Session cookies đã được lưu thành công',
+    userId: cUser.value,
+    cookieCount: cookieList.length,
+  });
+});
+
+/**
+ * @desc    Clear FB session (force re-login on next crawl)
+ * @route   DELETE /api/crawl/fb/session
+ * @access  Private/Admin
+ */
+router.delete('/fb/session', auth, admin, (req, res) => {
+  const path = require('path');
+  const fs   = require('fs');
+  const SESSION_PATH = path.join(__dirname, '../../.fb-session.json');
+
+  if (fs.existsSync(SESSION_PATH)) {
+    fs.unlinkSync(SESSION_PATH);
+    return res.json({ success: true, message: 'Session đã được xóa' });
+  }
+  return res.json({ success: true, message: 'Không có session để xóa' });
+});
+
 // =================== Facebook Group Import ===================
 
 /**
