@@ -9,6 +9,7 @@ import PropertyListPage from './pages/PropertyListPage';
 import PropertyDetailsPage from './pages/PropertyDetailsPage';
 import CrawlConfigPage from './pages/admin/CrawlConfigPage';
 import FBImportPage from './pages/admin/FBImportPage';
+import CrawlLogPage from './pages/admin/CrawlLogPage';
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { isAuthenticated, isAdmin, loading } = useAuth();
@@ -55,6 +56,7 @@ function App() {
           <Route path="admin/users" element={<UserManagementPage />} />
           <Route path="admin/crawl" element={<CrawlConfigPage />} />
           <Route path="admin/fb-import" element={<FBImportPage />} />
+          <Route path="admin/crawl-logs" element={<CrawlLogPage />} />
         </Route>
       </Route>
 

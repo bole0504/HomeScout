@@ -5,19 +5,20 @@ class DataNormalizer {
    */
   parsePrice(priceStr) {
     if (!priceStr) return null;
-    
-    // Clean string: lower case, remove spaces, change comma to dot
-    const cleanStr = priceStr.toLowerCase().replace(/\s/g, '').replace(/,/g, '.');
-    
-    let value = parseFloat(cleanStr);
+
+    const lower = priceStr.toLowerCase();
+    // Extract the first number (with optional decimal comma/dot) from the string
+    const match = priceStr.replace(/,/g, '.').match(/(\d+(?:\.\d+)?)/);
+    if (!match) return null;
+    const value = parseFloat(match[1]);
     if (isNaN(value)) return null;
 
-    if (cleanStr.includes('tỷ')) {
+    if (lower.includes('tỷ')) {
       return value * 1000000000;
-    } else if (cleanStr.includes('triệu') || cleanStr.includes('tr')) {
+    } else if (lower.includes('triệu') || lower.includes('tr')) {
       return value * 1000000;
     }
-    
+
     return value;
   }
 
@@ -27,11 +28,11 @@ class DataNormalizer {
    */
   parseArea(areaStr) {
     if (!areaStr) return null;
-    
-    // Remove m2, m2, spaces...
-    const cleanStr = areaStr.toLowerCase().replace(/m²/g, '').replace(/m2/g, '').replace(/\s/g, '').replace(/,/g, '.');
-    
-    const value = parseFloat(cleanStr);
+
+    // Extract the first number from the string (handles "Diện tích: 100 m²", "145.2 m²", etc.)
+    const match = areaStr.replace(/,/g, '.').match(/(\d+(?:\.\d+)?)/);
+    if (!match) return null;
+    const value = parseFloat(match[1]);
     return isNaN(value) ? null : value;
   }
 

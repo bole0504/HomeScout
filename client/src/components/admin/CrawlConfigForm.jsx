@@ -4,6 +4,7 @@ import {
   Form,
   Input,
   InputNumber,
+  Select,
   Switch,
   Tabs,
   Row,
@@ -48,7 +49,7 @@ const CrawlConfigForm = ({ visible, onCancel, onSubmit, initialData }) => {
           isActive: true,
           sourceType: 'website',
           interval: 15,
-          pagination: { type: 'url-param', paramName: 'page', maxPages: 5 },
+          pagination: { type: 'url-param', paramName: 'page', pagePattern: '', maxPages: 5 },
         });
         setSourceType('website');
       }
@@ -256,10 +257,24 @@ const CrawlConfigForm = ({ visible, onCancel, onSubmit, initialData }) => {
                   <Col span={12}>
                     <Title level={5}>Pagination</Title>
                     <Form.Item name={['pagination', 'type']} label="Loại phân trang">
-                      <Input disabled defaultValue="URL Parameter" />
+                      <Select defaultValue="url-param">
+                        <Select.Option value="url-param">Query param (?page=2)</Select.Option>
+                        <Select.Option value="path-param">Path (/trang-2)</Select.Option>
+                        <Select.Option value="next-button">Nút Next</Select.Option>
+                      </Select>
                     </Form.Item>
-                    <Form.Item name={['pagination', 'paramName']} label="Tên tham số">
-                      <Input placeholder="page" />
+                    <Form.Item noStyle shouldUpdate={(prev, cur) => prev.pagination?.type !== cur.pagination?.type}>
+                      {({ getFieldValue }) =>
+                        getFieldValue(['pagination', 'type']) === 'path-param' ? (
+                          <Form.Item name={['pagination', 'pagePattern']} label="Path pattern">
+                            <Input placeholder="/trang-{page}" />
+                          </Form.Item>
+                        ) : (
+                          <Form.Item name={['pagination', 'paramName']} label="Tên tham số">
+                            <Input placeholder="page" />
+                          </Form.Item>
+                        )
+                      }
                     </Form.Item>
                   </Col>
                 </Row>

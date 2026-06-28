@@ -74,18 +74,18 @@ class Deduplicator {
   generateHash(property) {
     if (!property) return '';
 
-    // Normalize title for cross-site matching (same listing, different formatting)
-    const titlePart = (property.title || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9à-ỹ\s]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 80); // Use first 80 chars to avoid noise from long titles
+    // FB raw post (không có địa chỉ): hash theo nội dung gốc hoặc postUrl
+    if (property.originalData) {
+      const rawKey = property.sourceUrl
+        ? `fb_url|${property.sourceUrl}`
+        : `fb_text|${(property.originalData || '').slice(0, 200)}`;
+      return crypto.createHash('sha256').update(rawKey).digest('hex');
+    }
 
     const provPart = ((property.address && property.address.province) || '').toLowerCase().trim();
     const distPart = ((property.address && property.address.district) || '').toLowerCase().trim();
     const wardPart = ((property.address && property.address.ward) || '').toLowerCase().trim();
-    const phonePart = (property.phone || '').replace(/[^0-9]/g, '').trim(); // digits only
+    const phonePart = (property.phone || '').replace(/[^0-9]/g, '').trim();
 
     const payload = `${provPart}|${distPart}|${wardPart}|${phonePart}`;
     return crypto.createHash('sha256').update(payload).digest('hex');
@@ -152,9 +152,10 @@ class Deduplicator {
 
       // Update top level attributes
       const topLevelFields = [
-        'title', 'phone', 'pricePerM2', 'totalPrice', 'area', 
-        'bedrooms', 'wc', 'description', 'images', 'sourceUrl', 
-        'contentHash', 'dataCompletenessScore', 'publishedDate'
+        'title', 'phone', 'pricePerM2', 'totalPrice', 'area',
+        'bedrooms', 'wc', 'description', 'images', 'sourceUrl',
+        'contentHash', 'dataCompletenessScore', 'publishedDate',
+        'sourceType', 'originalData',
       ];
       topLevelFields.forEach(field => {
         if (validatedItem[field] !== undefined) {

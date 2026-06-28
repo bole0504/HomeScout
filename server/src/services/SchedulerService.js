@@ -123,6 +123,7 @@ class SchedulerService {
     };
 
     let errorMessage = '';
+    let failReasons = [];
     let status = 'success';
 
     try {
@@ -139,11 +140,20 @@ class SchedulerService {
         for (const post of rawPosts) {
           try {
             const parsed = FBTextParser.parse(post.text, post.images, post.postUrl);
-            if (!parsed) { stats.totalFailed++; continue; }
+            if (!parsed) {
+              // FBTextParser thất bại hoàn toàn — vẫn lưu raw text
+              const fallback = this._normalizeFbItem(
+                { address: {} }, config._id, post.text
+              );
+              const result = await Deduplicator.upsert(fallback, config._id);
+              if (result.action === 'inserted') stats.totalInserted++;
+              else if (result.action === 'updated') stats.totalUpdated++;
+              else stats.totalSkipped++;
+              continue;
+            }
 
-            // Map FBTextParser output → Property schema
-            const normalized = this._normalizeFbItem(parsed, config._id);
-            if (!normalized) { stats.totalFailed++; continue; }
+            // Map FBTextParser output → Property schema (luôn thành công)
+            const normalized = this._normalizeFbItem(parsed, config._id, post.text);
 
             const result = await Deduplicator.upsert(normalized, config._id);
             if (result.action === 'inserted') stats.totalInserted++;
@@ -177,6 +187,10 @@ class SchedulerService {
 
       if (stats.totalFailed > 0 && stats.totalInserted === 0 && stats.totalUpdated === 0) {
         status = 'failed';
+        if (typeof failReasons !== 'undefined' && failReasons.length > 0) {
+          const counts = failReasons.reduce((a, r) => { a[r] = (a[r]||0)+1; return a; }, {});
+          errorMessage = Object.entries(counts).map(([r,n]) => `${n}x ${r}`).join('; ');
+        }
       } else if (stats.totalFailed > 0) {
         status = 'partial';
       }
@@ -259,21 +273,21 @@ class SchedulerService {
 
   /**
    * Map FBTextParser output → Property schema fields.
-   * Returns null if minimum required fields are missing.
+   * Luôn trả về object (không trả null) — nếu thiếu thông tin, lưu vào originalData.
    */
-  _normalizeFbItem(parsed, configId) {
+  _normalizeFbItem(parsed, configId, rawText) {
     const province = (parsed.address?.city || '').trim();
     const district = (parsed.address?.district || '').trim();
+    const hasAddress = province && district;
 
-    // province + district are required by the Property model
-    if (!province || !district) return null;
-
-    // rawPrice is in VND; Property.totalPrice is in triệu (millions)
     const totalPrice = parsed.rawPrice ? Math.round(parsed.rawPrice / 1000000) : undefined;
     const pricePerM2 = parsed.rawPricePerM2 ? Math.round(parsed.rawPricePerM2 / 1000000) : undefined;
 
+    // Khi không extract được địa chỉ: lưu raw text, đánh dấu là incomplete
+    const originalData = !hasAddress ? (rawText || '') : undefined;
+
     return {
-      title: parsed.title,
+      title: parsed.title || (originalData ? rawText?.slice(0, 80) : undefined),
       transactionType: parsed.transactionType,
       propertyType: parsed.propertyType,
       address: {
@@ -290,15 +304,18 @@ class SchedulerService {
       description: parsed.description || '',
       images: parsed.images || [],
       sourceUrl: parsed.sourceUrl || '',
-      source: 'facebook',
+      sourceType: 'facebook',
       crawlConfigId: configId,
+      originalData,
       building: {
         floors: parsed.floors || undefined,
         bedrooms: parsed.bedrooms || undefined,
         wc: parsed.wc || undefined,
       },
       legal: {
-        titleDeed: parsed.legal || undefined,
+        titleDeed: ['sổ đỏ', 'sổ hồng', 'chờ sổ', 'chưa có sổ'].includes(parsed.legal)
+          ? parsed.legal
+          : undefined,
       },
       land: {
         direction: parsed.direction

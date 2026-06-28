@@ -9,6 +9,7 @@ import {
   DatabaseOutlined,
   FacebookOutlined,
   UserOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -59,6 +60,12 @@ const AdminLayout = () => {
         icon: <FacebookOutlined style={{ color: '#1877f2' }} />,
         label: 'Import Facebook',
         mobileLabel: 'Facebook',
+      },
+      {
+        key: '/admin/crawl-logs',
+        icon: <FileTextOutlined />,
+        label: 'Lịch sử Crawl',
+        mobileLabel: 'Logs',
       },
     ] : []),
   ];

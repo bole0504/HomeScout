@@ -3,17 +3,17 @@ const { PROPERTY_STATUS, SOURCE_TYPES } = require('../config/constants');
 
 const propertySchema = new mongoose.Schema(
   {
-    // Required: Address
+    // Address — required cho website crawl, optional cho FB (có thể không parse được)
     address: {
       province: {
         type: String,
-        required: [true, 'Province/City is required'],
         trim: true,
+        default: '',
       },
       district: {
         type: String,
-        required: [true, 'District is required'],
         trim: true,
+        default: '',
       },
       ward: {
         type: String,
@@ -163,6 +163,12 @@ const propertySchema = new mongoose.Schema(
     goodPricePercent: {
       type: Number, // % thấp hơn trung bình
       default: 0,
+    },
+
+    // Raw FB post text — lưu khi không extract được đủ thông tin
+    originalData: {
+      type: String,
+      trim: true,
     },
 
     // Metadata

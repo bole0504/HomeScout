@@ -74,6 +74,7 @@ export const crawlAPI = {
   deleteConfig: (id) => api.delete(`/crawl/configs/${id}`),
   runConfig: (id) => api.post(`/crawl/configs/${id}/run`),
   runAll: () => api.post('/crawl/run-all'),
+  getAllLogs: (params) => api.get('/crawl/logs', { params }),
   getLogs: (configId, params) => api.get(`/crawl/logs/${configId}`, { params }),
   getSchedulerStatus: () => api.get('/crawl/scheduler/status'),
   aiSuggest: (url) => api.post('/crawl/ai-suggest', { url }),

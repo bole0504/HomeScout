@@ -259,6 +259,10 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+.row-failed td {
+  background: #fff2f0 !important;
+}
+
 .filter-mobile-toggle__arrow {
   margin-left: auto;
   font-size: 11px;

@@ -68,7 +68,7 @@ class CrawlService {
       });
       await new Promise(r => setTimeout(r, 1000));
       // Preview: cap at 20 items
-      return this._extractPage(page, selectors, 20);
+      return await this._extractPage(page, selectors, 20);
     } catch (error) {
       console.error('[testCrawl] Error:', error.message);
       throw error;
@@ -233,10 +233,18 @@ class CrawlService {
         console.log(`[CrawlService] Loaded ${savedCookies.length} saved cookies for ${new URL(url).hostname}`);
       }
 
+      const paginationType = pagination?.type || 'url-param';
+      const pagePattern = pagination?.pagePattern || '';
+
       for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
-        const pageUrl = pageNum === 1
-          ? url
-          : `${url}${url.includes('?') ? '&' : '?'}${paramName}=${pageNum}`;
+        let pageUrl;
+        if (pageNum === 1) {
+          pageUrl = url;
+        } else if (paginationType === 'path-param' && pagePattern) {
+          pageUrl = url.replace(/\/$/, '') + pagePattern.replace('{page}', pageNum);
+        } else {
+          pageUrl = `${url}${url.includes('?') ? '&' : '?'}${paramName}=${pageNum}`;
+        }
 
         console.log(`[CrawlService] Crawling page ${pageNum}/${maxPages}: ${pageUrl}`);
 

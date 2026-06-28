@@ -55,6 +55,19 @@ class AddressParser {
       districtCode: null
     };
 
+    // --- District aliases: viết tắt / biến thể thường gặp ---
+    // key = normalized alias, value = normalized district name cần match
+    const DISTRICT_ALIASES = {
+      'bmt':     'buon ma thuot',  // Thành phố Buôn Ma Thuột
+      'buon ma thuot': 'buon ma thuot',
+      'cukuin':  'cu kuin',        // Huyện Cư Kuin (viết liền)
+      'cu kuin': 'cu kuin',
+      'binhtan': 'binh tan',       // Quận Bình Tân
+      'govap':   'go vap',
+      'thuduc':  'thu duc',
+      'tph':     'thu phu',
+    };
+
     // --- STEP 1: Find District First (Bottom-up with Scoring) ---
     let allDistricts = [];
     this.provinces.forEach(p => {
@@ -65,15 +78,24 @@ class AddressParser {
       }
     });
 
+    // Check alias match first — replace alias token in normalized text with the canonical form
+    let workingText = normalizedText;
+    for (const [alias, canonical] of Object.entries(DISTRICT_ALIASES)) {
+      const aliasRe = new RegExp(`\\b${alias}\\b`, 'gi');
+      if (aliasRe.test(workingText)) {
+        workingText = workingText.replace(aliasRe, canonical);
+      }
+    }
+
     let candidates = [];
     for (const d of allDistricts) {
       const dName = this.normalize(d.name);
       const dNameClean = dName.replace(/^(quan|huyen|thi xa|thanh pho)\s+/, '');
-      
+
       // Skip if name is too short and looks like noise
       if (dNameClean.length <= 4 && NOISE_WORDS.includes(dNameClean)) continue;
 
-      let patterns = [dName]; 
+      let patterns = [dName];
       if (dNameClean.match(/^\d+$/)) {
         patterns.push(`q\\s?${dNameClean}`, `q\\.${dNameClean}`, `quan\\s${dNameClean}`);
       } else if (dNameClean.length > 2) {
@@ -82,7 +104,7 @@ class AddressParser {
 
       const regex = new RegExp(`\\b(${patterns.join('|')})\\b`, 'gi');
       let match;
-      while ((match = regex.exec(normalizedText)) !== null) {
+      while ((match = regex.exec(workingText)) !== null) {
         // Scoring: 
         // - More words in dNameClean = higher score (Vd: "Nam Tu Liem" > "Chu")
         // - Matches with prefix (Quận/Huyện) get higher score
@@ -128,7 +150,8 @@ class AddressParser {
         // Special logic for common abbreviations
         let patterns = [pName, pNameClean];
         if (p.code === 79) patterns.push('hcm', 'tp hcm', 'sai gon');
-        if (p.code === 1) patterns.push('ha noi', 'hn');
+        if (p.code === 1)  patterns.push('ha noi', 'hn');
+        if (p.code === 66) patterns.push('dak lak', 'daklak', 'bmt');
 
         const regex = new RegExp(`\\b(${patterns.join('|')})\\b`, 'i');
         if (regex.test(normalizedText)) {

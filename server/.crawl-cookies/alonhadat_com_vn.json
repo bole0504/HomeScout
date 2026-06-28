@@ -1,0 +1,72 @@
+[
+  {
+    "name": "_ga_ERYH5XEJQM",
+    "value": "GS2.1.s1782606604$o3$g1$t1782613849$j15$l0$h0",
+    "domain": ".alonhadat.com.vn",
+    "path": "/",
+    "expires": 1817173849.654099,
+    "size": 59,
+    "httpOnly": false,
+    "secure": false,
+    "session": false,
+    "priority": "Medium",
+    "sameParty": false,
+    "sourceScheme": "Secure"
+  },
+  {
+    "name": "ignoredmember",
+    "value": "",
+    "domain": "alonhadat.com.vn",
+    "path": "/",
+    "expires": 1814149802,
+    "size": 13,
+    "httpOnly": false,
+    "secure": false,
+    "session": false,
+    "priority": "Medium",
+    "sameParty": false,
+    "sourceScheme": "Secure"
+  },
+  {
+    "name": "_ga",
+    "value": "GA1.1.1363267880.1782015303",
+    "domain": ".alonhadat.com.vn",
+    "path": "/",
+    "expires": 1816575303.144459,
+    "size": 30,
+    "httpOnly": false,
+    "secure": false,
+    "session": false,
+    "priority": "Medium",
+    "sameParty": false,
+    "sourceScheme": "Secure"
+  },
+  {
+    "name": "ASP.NET_SessionId",
+    "value": "gn3img45jsjfqn55uncjpn55",
+    "domain": "alonhadat.com.vn",
+    "path": "/",
+    "expires": -1,
+    "size": 41,
+    "httpOnly": true,
+    "secure": false,
+    "session": true,
+    "priority": "Medium",
+    "sameParty": false,
+    "sourceScheme": "Secure"
+  },
+  {
+    "name": "_gcl_au",
+    "value": "1.1.1548428871.1782015303",
+    "domain": ".alonhadat.com.vn",
+    "path": "/",
+    "expires": 1789791303,
+    "size": 32,
+    "httpOnly": false,
+    "secure": false,
+    "session": false,
+    "priority": "Medium",
+    "sameParty": false,
+    "sourceScheme": "Secure"
+  }
+]

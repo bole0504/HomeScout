@@ -8,3 +8,4 @@ build/
 .idea/
 .fb-session.json
 CREDENTIALS.md
+token.json

@@ -54,6 +54,7 @@ const crawlConfigSchema = new mongoose.Schema(
       },
       selector: { type: String, default: '' },
       paramName: { type: String, default: 'page' },
+      pagePattern: { type: String, default: '' }, // for path-param: e.g. /trang-{page}
       maxPages: { type: Number, default: 5 },
     },
 

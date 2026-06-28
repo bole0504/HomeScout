@@ -28,6 +28,7 @@ module.exports = {
   // Crawl pagination types
   CRAWL_PAGINATION: {
     URL_PARAM: 'url-param',
+    PATH_PARAM: 'path-param',  // e.g. /trang-{page} appended to base URL
     NEXT_BUTTON: 'next-button',
     INFINITE_SCROLL: 'infinite-scroll',
   },
